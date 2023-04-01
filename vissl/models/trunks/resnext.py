@@ -62,18 +62,13 @@ class ResNeXt(nn.Module):
         super(ResNeXt, self).__init__()
         self.model_config = model_config
         logging.info(
-            "ResNeXT trunk, supports activation checkpointing. {}".format(
-                "Activated"
-                if self.model_config.ACTIVATION_CHECKPOINTING.USE_ACTIVATION_CHECKPOINTING
-                else "Deactivated"
-            )
+            f'ResNeXT trunk, supports activation checkpointing. {"Activated" if self.model_config.ACTIVATION_CHECKPOINTING.USE_ACTIVATION_CHECKPOINTING else "Deactivated"}'
         )
 
         self.trunk_config = self.model_config.TRUNK.RESNETS
         self.depth = SUPPORTED_DEPTHS(self.trunk_config.DEPTH)
         self.width_multiplier = self.trunk_config.WIDTH_MULTIPLIER
         self._norm_layer = _get_norm(self.trunk_config)
-        self.groups = self.trunk_config.GROUPS
         self.zero_init_residual = self.trunk_config.ZERO_INIT_RESIDUAL
         self.width_per_group = self.trunk_config.WIDTH_PER_GROUP
         self.use_checkpointing = (
@@ -83,6 +78,7 @@ class ResNeXt(nn.Module):
             self.model_config.ACTIVATION_CHECKPOINTING.NUM_ACTIVATION_CHECKPOINTING_SPLITS
         )
 
+        self.groups = self.trunk_config.GROUPS
         (n1, n2, n3, n4) = BLOCK_CONFIG[self.depth]
         logging.info(
             f"Building model: ResNeXt"
@@ -167,7 +163,7 @@ class ResNeXt(nn.Module):
         self, x: torch.Tensor, out_feat_keys: List[str] = None
     ) -> List[torch.Tensor]:
         if isinstance(x, MultiDimensionalTensor):
-            out = get_tunk_forward_interpolated_outputs(
+            return get_tunk_forward_interpolated_outputs(
                 input_type=self.model_config.INPUT_TYPE,
                 interpolate_out_feat_key_name="res5",
                 remove_padding_before_feat_key_name="avgpool",
@@ -177,16 +173,14 @@ class ResNeXt(nn.Module):
                 use_checkpointing=self.use_checkpointing,
                 checkpointing_splits=self.num_checkpointing_splits,
             )
-        else:
-            model_input = transform_model_input_data_type(
-                x, self.model_config.INPUT_TYPE
-            )
-            out = get_trunk_forward_outputs(
-                feat=model_input,
-                out_feat_keys=out_feat_keys,
-                feature_blocks=self._feature_blocks,
-                feature_mapping=self.feat_eval_mapping,
-                use_checkpointing=self.use_checkpointing,
-                checkpointing_splits=self.num_checkpointing_splits,
-            )
-        return out
+        model_input = transform_model_input_data_type(
+            x, self.model_config.INPUT_TYPE
+        )
+        return get_trunk_forward_outputs(
+            feat=model_input,
+            out_feat_keys=out_feat_keys,
+            feature_blocks=self._feature_blocks,
+            feature_mapping=self.feat_eval_mapping,
+            use_checkpointing=self.use_checkpointing,
+            checkpointing_splits=self.num_checkpointing_splits,
+        )

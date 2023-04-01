@@ -81,9 +81,8 @@ class SVMLowShotTrainer(SVMTrainer):
         # in case of low-shot training, we train for 5 independent samples
         # (sample{}) and vary low-shot amount (k{}). The input data should have
         # sample{}_k{} information that we extract in suffix below.
-        cls_cost = str(cls_num) + "_cost" + str(float(cost))
-        out_file = f"{self.output_dir}/cls{cls_cost}_{suffix}.pickle"
-        return out_file
+        cls_cost = f"{str(cls_num)}_cost{float(cost)}"
+        return f"{self.output_dir}/cls{cls_cost}_{suffix}.pickle"
 
     def train(self, features, targets, sample_num, low_shot_kvalue):
         """
@@ -254,10 +253,11 @@ class SVMLowShotTrainer(SVMTrainer):
                 f"{round(argmax_max[idx], 2)} / "
                 f"{round(argmax_std[idx], 2)}"
             )
-            output_results[f"k={k_values[idx]}"] = {}
-            output_results[f"k={k_values[idx]}"]["mean"] = round(argmax_mean[idx], 2)
-            output_results[f"k={k_values[idx]}"]["min"] = round(argmax_min[idx], 2)
-            output_results[f"k={k_values[idx]}"]["max"] = round(argmax_max[idx], 2)
-            output_results[f"k={k_values[idx]}"]["std"] = round(argmax_std[idx], 2)
+            output_results[f"k={k_values[idx]}"] = {
+                "mean": round(argmax_mean[idx], 2),
+                "min": round(argmax_min[idx], 2),
+                "max": round(argmax_max[idx], 2),
+                "std": round(argmax_std[idx], 2),
+            }
         logging.info("All done!!")
         return output_results

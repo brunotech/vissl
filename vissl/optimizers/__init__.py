@@ -9,4 +9,4 @@ from vissl.optimizers.lars import LARS  # noqa
 from vissl.optimizers.optimizer_helper import get_optimizer_param_groups  # noqa
 
 
-__all__ = [k for k in globals().keys() if not k.startswith("_")]
+__all__ = [k for k in globals() if not k.startswith("_")]

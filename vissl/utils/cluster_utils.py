@@ -64,10 +64,10 @@ class ClusterAssignmentLoader:
             assert len(image_paths) == 1, "Multi-dataset not supported yet!"
             image_paths = image_paths[0]
 
-            image_labels = []
-            for image_id in range(len(image_paths)):
-                image_labels.append(assignments.cluster_assignments[split][image_id])
-
+            image_labels = [
+                assignments.cluster_assignments[split][image_id]
+                for image_id in range(len(image_paths))
+            ]
             images_file_path = os.path.join(output_dir, f"{split.lower()}_images.npy")
             labels_file_path = os.path.join(output_dir, f"{split.lower()}_labels.npy")
             np.save(images_file_path, np.array(image_paths))
@@ -119,10 +119,9 @@ class ClusterVisualizer:
             chosen_image_ids = np.random.choice(
                 image_ids, size=num_images, replace=False
             )
-            images = [self.data_source[image_id][0] for image_id in chosen_image_ids]
+            return [self.data_source[image_id][0] for image_id in chosen_image_ids]
         else:
-            images = [self.data_source[image_id][0] for image_id in image_ids]
-        return images
+            return [self.data_source[image_id][0] for image_id in image_ids]
 
     @staticmethod
     def _to_cluster_to_image_map(

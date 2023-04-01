@@ -50,13 +50,10 @@ def parse_config_from_log(log_path: str) -> dict:
     # World size info from config is not reliable. Use the
     # String prepending beginning of world size info
     world_size_string = "WORLD_SIZE:"
-    world_size_btwn = ("WORLD_SIZE:\t", "\n")
     world_size = None
 
     train_losses = []
     train_loss_str = "loss:"
-    loss_string_btwn = ("loss: ", ";")
-
     latest_epoch = 0
     epoch_string = "[ep: "
     epoch_regex = r"(?<=\[ep: )\d{1,5}(?=\])"
@@ -78,8 +75,8 @@ def parse_config_from_log(log_path: str) -> dict:
                     world_size = line
                 if train_loss_str in line:
                     train_losses.append(line)
-                for partition in accuracies.keys():
-                    if accuracies[partition]["string"] in line:
+                for partition, value in accuracies.items():
+                    if value["string"] in line:
                         accuracies[partition]["values"].append(line)
             if not config_finished:
                 if config_start in line:
@@ -91,9 +88,8 @@ def parse_config_from_log(log_path: str) -> dict:
                     store_line = False
                     config_finished = True
             if epoch_string in line:
-                epoch = re.search(epoch_regex, line)
-                if epoch:
-                    latest_epoch = int(epoch.group(0))
+                if epoch := re.search(epoch_regex, line):
+                    latest_epoch = int(epoch[0])
 
     if config:
         # Parse into dict
@@ -105,6 +101,7 @@ def parse_config_from_log(log_path: str) -> dict:
             config = {}
         # Add latest epoch to config
         config["latest_epoch"] = latest_epoch
+        world_size_btwn = ("WORLD_SIZE:\t", "\n")
         # Parse world size from string
         try:
             world_size = world_size.split(world_size_btwn[0])[1]
@@ -114,6 +111,8 @@ def parse_config_from_log(log_path: str) -> dict:
             config["WORLD_SIZE"] = world_size
         except BaseException:
             print("Unable to parse world size")
+        loss_string_btwn = ("loss: ", ";")
+
         try:
             final_loss = train_losses[-1]
             final_loss = final_loss.split(loss_string_btwn[0])[1]
@@ -154,10 +153,8 @@ def flatten(d: collections.abc.MutableMapping, parent_key: str = "", sep: str = 
 def parse_date_time(
     str_to_parse: str = None, pattern: str = None, split_char: str = None
 ):
-    instances = re.findall(pattern, str_to_parse)
-    if instances:
-        date_time = instances[0].split(split_char)
-        return date_time
+    if instances := re.findall(pattern, str_to_parse):
+        return instances[0].split(split_char)
 
 
 def update_config_date_time(
@@ -171,8 +168,9 @@ def update_config_date_time(
 
 def get_latest_checkpoint(directory: pathlib.PosixPath, args: argparse.Namespace):
     latest_checkpoint = None
-    checkpoint_files = list(directory.glob(f"*{args.checkpoint_id_pattern}*"))
-    if checkpoint_files:
+    if checkpoint_files := list(
+        directory.glob(f"*{args.checkpoint_id_pattern}*")
+    ):
         latest_checkpoint = 0
         for checkpoint_file in checkpoint_files:
             checkpoint_file = str(checkpoint_file).split("/")[-1]
@@ -182,7 +180,6 @@ def get_latest_checkpoint(directory: pathlib.PosixPath, args: argparse.Namespace
             checkpoint_epoch = int(checkpoint_epoch[0])
             if checkpoint_epoch > latest_checkpoint:
                 latest_checkpoint = checkpoint_epoch
-        pass
     else:
         print("Unable to parse latest checkpoint information")
     return latest_checkpoint
@@ -271,10 +268,11 @@ if __name__ == "__main__":
         if args.parse_checkpoint:
             last_checkpoint = get_latest_checkpoint(f.parent, args)
             config["last_checkpoint_phase"] = last_checkpoint
-        if args.parse_checkpoint and config["last_checkpoint_phase"]:
-            configs_to_concat.append(config)
-            did_not_add = False
-        elif not args.parse_checkpoint:
+        if (
+            args.parse_checkpoint
+            and config["last_checkpoint_phase"]
+            or not args.parse_checkpoint
+        ):
             configs_to_concat.append(config)
             did_not_add = False
         if did_not_add:

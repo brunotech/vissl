@@ -79,11 +79,10 @@ class AlexNetBvlc(nn.Module):
 
     def forward(self, x, out_feat_keys=None):
         feat = x
-        out_feats = get_trunk_forward_outputs_module_list(
+        return get_trunk_forward_outputs_module_list(
             feat,
             out_feat_keys,
             self._feature_blocks,
             self.all_feat_names,
             use_checkpointing=False,
         )
-        return out_feats

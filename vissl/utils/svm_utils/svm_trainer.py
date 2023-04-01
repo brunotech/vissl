@@ -76,7 +76,7 @@ class SVMTrainer(object):
             for num in range(start_num, end_num):
                 costs_list.append(base ** num)
         self.costs_list = costs_list
-        logging.info("Training SVM for costs: {}".format(costs_list))
+        logging.info(f"Training SVM for costs: {costs_list}")
         return costs_list
 
     def _get_cls_list(self, targets):
@@ -85,11 +85,11 @@ class SVMTrainer(object):
         if len(self.config["cls_list"]) > 0:
             cls_list = [int(cls_num) for cls_num in self.config["cls_list"]]
         self.cls_list = cls_list
-        logging.info("Training SVM for classes: {}".format(self.cls_list))
+        logging.info(f"Training SVM for classes: {self.cls_list}")
         return cls_list
 
     def _get_svm_model_filename(self, cls_num, cost):
-        cls_cost = str(cls_num) + "_cost" + str(float(cost))
+        cls_cost = f"{str(cls_num)}_cost{float(cost)}"
         out_file = f"{self.output_dir}/cls{cls_cost}.pickle"
         ap_matrix_out_file = f"{self.output_dir}/AP_cls{cls_cost}.npy"
         return out_file, ap_matrix_out_file
@@ -233,7 +233,7 @@ class SVMTrainer(object):
             # normalize the features: N x 9216 (example shape)
             features = self._normalize_features(features)
         num_classes = targets.shape[1]
-        logging.info("Num test classes: {}".format(num_classes))
+        logging.info(f"Num test classes: {num_classes}")
         # get the chosen cost that maximizes the cross-validation AP per class
         costs_list = self.get_best_cost_value()
 

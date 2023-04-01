@@ -58,31 +58,23 @@ def get_rmac_region_coordinates(H, W, L):
 
         wl2 = np.floor(wl / 2 - 1)
         # Center coordinates
-        if l + Wd - 1 > 0:
-            b = (W - wl) / (l + Wd - 1)
-        else:
-            b = 0
+        b = (W - wl) / (l + Wd - 1) if l + Wd > 1 else 0
         cenW = np.floor(wl2 + b * np.arange(l - 1 + Wd + 1)) - wl2
 
         # Center coordinates
-        if l + Hd - 1 > 0:
-            b = (H - wl) / (l + Hd - 1)
-        else:
-            b = 0
+        b = (H - wl) / (l + Hd - 1) if l + Hd > 1 else 0
         cenH = np.floor(wl2 + b * np.arange(l - 1 + Hd + 1)) - wl2
 
         for i_ in cenH:
-            for j_ in cenW:
-                regions_xywh.append([j_, i_, wl, wl])
-
+            regions_xywh.extend([j_, i_, wl, wl] for j_ in cenW)
     # Round the regions. Careful with the borders!
-    for i in range(len(regions_xywh)):
+    for item in regions_xywh:
         for j in range(4):
-            regions_xywh[i][j] = int(round(regions_xywh[i][j]))
-        if regions_xywh[i][0] + regions_xywh[i][2] > W:
-            regions_xywh[i][0] -= (regions_xywh[i][0] + regions_xywh[i][2]) - W
-        if regions_xywh[i][1] + regions_xywh[i][3] > H:
-            regions_xywh[i][1] -= (regions_xywh[i][1] + regions_xywh[i][3]) - H
+            item[j] = int(round(item[j]))
+        if item[0] + item[2] > W:
+            item[0] -= item[0] + item[2] - W
+        if item[1] + item[3] > H:
+            item[1] -= item[1] + item[3] - H
 
     return np.array(regions_xywh)
 

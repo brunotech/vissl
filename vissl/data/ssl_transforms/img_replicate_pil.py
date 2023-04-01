@@ -32,10 +32,7 @@ class ImgReplicatePil(ClassyTransform):
         self.num_times = num_times
 
     def __call__(self, image):
-        output = []
-        for _ in range(self.num_times):
-            output.append(image.copy())
-        return output
+        return [image.copy() for _ in range(self.num_times)]
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "ImgReplicatePil":

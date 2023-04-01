@@ -40,7 +40,7 @@ class AccuracyListMeter(ClassyMeter):
 
         assert is_pos_int(num_meters), "num_meters must be positive"
         assert isinstance(topk_values, list), "topk_values must be a list"
-        assert len(topk_values) > 0, "topk_values list should have at least one element"
+        assert topk_values, "topk_values list should have at least one element"
         assert [
             is_pos_int(x) for x in topk_values
         ], "each value in topk_values must be >= 1"
@@ -77,13 +77,10 @@ class AccuracyListMeter(ClassyMeter):
         returned. If there are several meters attached to the same layer
         name, a list of top-k values will be returned for that layer name meter.
         """
-        val_dict = {}
-        for ind, meter in enumerate(self._meters):
-            meter_val = meter.value
-            sample_count = meter._total_sample_count
-            val_dict[ind] = {}
-            val_dict[ind]["val"] = meter_val
-            val_dict[ind]["sample_count"] = sample_count
+        val_dict = {
+            ind: {"val": meter.value, "sample_count": meter._total_sample_count}
+            for ind, meter in enumerate(self._meters)
+        }
         # also create dict w.r.t top-k
         output_dict = {}
         for k in self._topk_values:
@@ -100,8 +97,8 @@ class AccuracyListMeter(ClassyMeter):
                     output_dict[top_k_str][meter_name] = [val]
                 else:
                     output_dict[top_k_str][meter_name].append(val)
-        for topk in output_dict:
-            for k in output_dict[topk]:
+        for topk, value_ in output_dict.items():
+            for k in value_:
                 if len(output_dict[topk][k]) == 1:
                     output_dict[topk][k] = output_dict[topk][k][0]
         return output_dict
@@ -110,7 +107,7 @@ class AccuracyListMeter(ClassyMeter):
         """
         Globally syncing the state of each meter across all the trainers.
         """
-        for _, meter in enumerate(self._meters):
+        for meter in self._meters:
             meter.sync_state()
 
     def get_classy_state(self):
@@ -120,8 +117,7 @@ class AccuracyListMeter(ClassyMeter):
         meter_states = {}
         for ind, meter in enumerate(self._meters):
             state = meter.get_classy_state()
-            meter_states[ind] = {}
-            meter_states[ind]["state"] = state
+            meter_states[ind] = {"state": state}
         return meter_states
 
     def set_classy_state(self, state):

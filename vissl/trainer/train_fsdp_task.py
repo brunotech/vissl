@@ -21,12 +21,11 @@ class SelfSupervisionFSDPTask(SelfSupervisionTask):
     def __init__(self, config: AttrDict):
         super().__init__(config)
         # Ensure pytorch AMP type if mixed precision is on.
-        if config["MODEL"]["FSDP_CONFIG"]["mixed_precision"]:
-            if not (
-                config["MODEL"]["AMP_PARAMS"]["USE_AMP"]
-                and config["MODEL"]["AMP_PARAMS"]["AMP_TYPE"] == "pytorch"
-            ):
-                raise ValueError("FSDP's mixed precision requires pytorch AMP")
+        if config["MODEL"]["FSDP_CONFIG"]["mixed_precision"] and not (
+            config["MODEL"]["AMP_PARAMS"]["USE_AMP"]
+            and config["MODEL"]["AMP_PARAMS"]["AMP_TYPE"] == "pytorch"
+        ):
+            raise ValueError("FSDP's mixed precision requires pytorch AMP")
 
     def _init_pytorch_grad_scaler(self):
         assert is_fairscale_sharded_available(), (

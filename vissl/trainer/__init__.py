@@ -19,4 +19,4 @@ from vissl.trainer.train_task import SelfSupervisionTask  # NOQA
 from vissl.trainer.trainer_main import SelfSupervisionTrainer  # noqa
 
 
-__all__ = [k for k in globals().keys() if not k.startswith("_")]
+__all__ = [k for k in globals() if not k.startswith("_")]

@@ -324,7 +324,7 @@ class SelfSupervisionTask(ClassificationTask):
         # Gives sampler same seed for entire distributed group as per pytorch documentation.
         sampler_seed = self.config["SEED_VALUE"]
 
-        loaders = {
+        return {
             split.lower(): build_dataloader(
                 dataset=self.datasets[split.lower()],
                 dataset_config=self.config["DATA"][split],
@@ -337,8 +337,6 @@ class SelfSupervisionTask(ClassificationTask):
             )
             for split in self.available_splits
         }
-
-        return loaders
 
     def get_global_batchsize(self):
         """
@@ -360,8 +358,7 @@ class SelfSupervisionTask(ClassificationTask):
         optimizer_config = self.config["OPTIMIZER"]
         if optimizer_config.use_larc and optimizer_config.name != "sgd_fsdp":
             assert is_apex_available(), "Apex must be available to use LARC"
-        optim = build_optimizer(optimizer_config)
-        return optim
+        return build_optimizer(optimizer_config)
 
     def _build_optimizer_schedulers(self):
         """
@@ -390,13 +387,12 @@ class SelfSupervisionTask(ClassificationTask):
         loss_config = self.config.LOSS[loss_name]
         if "num_train_samples" in loss_config.keys():
             for split in self.available_splits:
-                if split == "TRAIN":
-                    loss_config["num_train_samples"] = len(self.datasets["train"])
                 if split == "TEST":
                     loss_config["num_train_samples"] = len(self.datasets["test"])
+                elif split == "TRAIN":
+                    loss_config["num_train_samples"] = len(self.datasets["train"])
         loss_config["name"] = loss_name
-        loss = build_loss(loss_config)
-        return loss
+        return build_loss(loss_config)
 
     def _build_meters(self):
         """
@@ -811,9 +807,7 @@ class SelfSupervisionTask(ClassificationTask):
         """
         if self._enable_manual_gradient_reduction is None and self.model is not None:
             self.set_manual_gradient_reduction()
-        if self._enable_manual_gradient_reduction:
-            return True
-        return False
+        return bool(self._enable_manual_gradient_reduction)
 
     def set_manual_gradient_reduction(self) -> None:
         """

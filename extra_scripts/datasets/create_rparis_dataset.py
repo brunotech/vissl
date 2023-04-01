@@ -159,9 +159,7 @@ def create_revisited_oxford_paris_dataset(
 
 
 def _add_missing_extension(file_name: str) -> str:
-    if not file_name.endswith(".jpg"):
-        return file_name + ".jpg"
-    return file_name
+    return file_name if file_name.endswith(".jpg") else f"{file_name}.jpg"
 
 
 def cleanup_unused_files(output_path: str):

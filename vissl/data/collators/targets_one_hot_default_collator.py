@@ -62,15 +62,13 @@ def targets_one_hot_default_collator(batch, num_classes: int):
     data_idx = torch.stack([torch.tensor(x["data_idx"][0]) for x in batch])
 
     labels = [x["label"][0] for x in batch]
-    output_labels = []
-    for idx in range(data.shape[0]):
-        output_labels.append(
-            convert_to_one_hot(labels[idx][0], labels[idx][1], num_classes)
-        )
-    output_batch = {
+    output_labels = [
+        convert_to_one_hot(labels[idx][0], labels[idx][1], num_classes)
+        for idx in range(data.shape[0])
+    ]
+    return {
         "data": [data],
         "label": [torch.stack(output_labels)],
         "data_valid": [data_valid],
         "data_idx": [data_idx],
     }
-    return output_batch

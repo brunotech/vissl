@@ -24,8 +24,9 @@ def get_mean_image(crop_size):
     Returns:
         img: PIL Image
     """
-    img = Image.fromarray(128 * np.ones((crop_size, crop_size, 3), dtype=np.uint8))
-    return img
+    return Image.fromarray(
+        128 * np.ones((crop_size, crop_size, 3), dtype=np.uint8)
+    )
 
 
 @contextlib.contextmanager
@@ -248,9 +249,7 @@ class QueueDataset(Dataset):
 
     def _is_large_image(self, sample):
         h, w = sample.size
-        if h * w > 10000000:
-            return True
-        return False
+        return h * w > 10000000
 
     def on_sucess(self, sample):
         """

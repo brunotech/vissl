@@ -16,7 +16,7 @@ def calculate_ap(rec, prec):
     for i in range(len(mpre) - 2, -1, -1):
         mpre[i] = max(mpre[i], mpre[i + 1])
 
-    indices = np.where(mrec[1:] != mrec[0:-1])[0] + 1
+    indices = np.where(mrec[1:] != mrec[:-1])[0] + 1
     ap = 0
     for i in indices:
         ap = ap + (mrec[i] - mrec[i - 1]) * mpre[i]
@@ -61,10 +61,7 @@ def get_precision_recall(targets, scores, weights=None):
     tp = sortcounts
     fp = sortcounts.copy()
     for i in range(sortcounts.shape[0]):
-        if sortcounts[i] >= 1:
-            fp[i] = 0.0
-        elif sortcounts[i] < 1:
-            fp[i] = 1.0
+        fp[i] = 0.0 if sortcounts[i] >= 1 else 1.0
     P = np.cumsum(tp) / (np.cumsum(tp) + np.cumsum(fp))
     numinst = np.sum(targets)
     R = np.cumsum(tp) / numinst

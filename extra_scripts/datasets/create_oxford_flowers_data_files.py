@@ -47,7 +47,7 @@ def download_oxford_flowers(root: str):
     in the folder provided as parameter
     """
     url_folder = "https://www.robots.ox.ac.uk/~vgg/data/flowers/102/"
-    download_and_extract_archive(url_folder + "102flowers.tgz", download_root=root)
+    download_and_extract_archive(f"{url_folder}102flowers.tgz", download_root=root)
     for url_file in ["imagelabels.mat", "setid.mat"]:
         download_url(url_folder + url_file, root)
 

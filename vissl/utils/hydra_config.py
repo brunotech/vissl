@@ -217,14 +217,13 @@ def get_scaled_lr_scheduler(cfg, param_schedulers, scaled_lr):
         decay_multiplier = end_value / start_value
         param_schedulers["start_value"] = float(scaled_lr)
         param_schedulers["end_value"] = float(scaled_lr * decay_multiplier)
-    elif param_schedulers["name"] == "multistep" or param_schedulers["name"] == "step":
+    elif param_schedulers["name"] in ["multistep", "step"]:
         values = param_schedulers["values"]
-        gamma = 1.0
-        if len(values) > 1:
-            gamma = round(values[1] / values[0], 6)
-        new_values = []
-        for idx in range(len(values)):
-            new_values.append(round(float(scaled_lr * pow(gamma, idx)), 8))
+        gamma = round(values[1] / values[0], 6) if len(values) > 1 else 1.0
+        new_values = [
+            round(float(scaled_lr * pow(gamma, idx)), 8)
+            for idx in range(len(values))
+        ]
         param_schedulers["values"] = new_values
     elif param_schedulers["name"] == "step_with_fixed_gamma":
         param_schedulers["base_value"] = scaled_lr
@@ -304,8 +303,7 @@ def infer_learning_rate(cfg):
         # param scheduler same as the trunk.
         cfg.OPTIMIZER.param_schedulers.lr_head = cfg.OPTIMIZER.param_schedulers.lr
     elif (
-        cfg.OPTIMIZER.head_optimizer_params.use_different_lr
-        and cfg.OPTIMIZER.param_schedulers.lr_head
+        cfg.OPTIMIZER.param_schedulers.lr_head
         and cfg.OPTIMIZER.param_schedulers.lr_head.auto_lr_scaling.auto_scale
     ):
         # if the user wants a different LR value for the head, then we
@@ -378,8 +376,17 @@ def infer_losses_config(cfg):
         world_size = cfg.DISTRIBUTED.NUM_NODES * cfg.DISTRIBUTED.NUM_PROC_PER_NODE
         cfg.LOSS.bce_logits_multiple_output_single_target.world_size = world_size
 
-    # multicrop version of simclr loss
-    if cfg.LOSS.name == "multicrop_simclr_info_nce_loss":
+    elif cfg.LOSS.name == "deepclusterv2_loss":
+        cfg.LOSS.deepclusterv2_loss.DROP_LAST = cfg.DATA.TRAIN.DROP_LAST
+        cfg.LOSS.deepclusterv2_loss.BATCHSIZE_PER_REPLICA = (
+            cfg.DATA.TRAIN.BATCHSIZE_PER_REPLICA
+        )
+        cfg.LOSS.deepclusterv2_loss.num_crops = (
+            total_num_crops or cfg.LOSS.deepclusterv2_loss.num_crops
+        )
+        cfg.DATA.TRAIN.COLLATE_FUNCTION = "multicrop_collator"
+
+    elif cfg.LOSS.name == "multicrop_simclr_info_nce_loss":
         world_size = cfg.LOSS.multicrop_simclr_info_nce_loss.buffer_params.world_size
         batch_size = cfg.DATA.TRAIN.BATCHSIZE_PER_REPLICA
         cfg.LOSS.multicrop_simclr_info_nce_loss.buffer_params.world_size = world_size
@@ -388,17 +395,6 @@ def infer_losses_config(cfg):
         )
         cfg.LOSS.multicrop_simclr_info_nce_loss.num_crops = (
             total_num_crops or cfg.LOSS.multicrop_simclr_info_nce_loss.num_crops
-        )
-        cfg.DATA.TRAIN.COLLATE_FUNCTION = "multicrop_collator"
-
-    # some inference for the DeepCluster-v2 loss.
-    if cfg.LOSS.name == "deepclusterv2_loss":
-        cfg.LOSS.deepclusterv2_loss.DROP_LAST = cfg.DATA.TRAIN.DROP_LAST
-        cfg.LOSS.deepclusterv2_loss.BATCHSIZE_PER_REPLICA = (
-            cfg.DATA.TRAIN.BATCHSIZE_PER_REPLICA
-        )
-        cfg.LOSS.deepclusterv2_loss.num_crops = (
-            total_num_crops or cfg.LOSS.deepclusterv2_loss.num_crops
         )
         cfg.DATA.TRAIN.COLLATE_FUNCTION = "multicrop_collator"
 
@@ -429,7 +425,14 @@ def infer_losses_config(cfg):
         cfg.LOSS.swav_loss.queue.local_queue_length = queue_length // world_size
 
     # some inference for the SwAV momentum loss.
-    if cfg.LOSS.name == "swav_momentum_loss":
+    if cfg.LOSS.name == "dino_loss":
+        assert len(cfg.MODEL.HEAD.PARAMS) == 1
+        assert cfg.MODEL.HEAD.PARAMS[0][0] == "swav_head"
+        cfg.LOSS.dino_loss.output_dim = cfg.MODEL.HEAD.PARAMS[0][1]["num_clusters"][0]
+        cfg.LOSS.dino_loss.num_crops = total_num_crops or cfg.LOSS.dino_loss.num_crops
+        cfg.DATA.TRAIN.COLLATE_FUNCTION = "multicrop_collator"
+
+    elif cfg.LOSS.name == "swav_momentum_loss":
         assert len(cfg.MODEL.HEAD.PARAMS) == 1
         assert cfg.MODEL.HEAD.PARAMS[0][0] == "swav_head"
         cfg.LOSS.swav_momentum_loss.num_prototypes = cfg.MODEL.HEAD.PARAMS[0][1][
@@ -452,14 +455,6 @@ def infer_losses_config(cfg):
         cfg.LOSS.swav_momentum_loss.queue.local_queue_length = (
             queue_length // world_size
         )
-
-    # some inference for DINO loss.
-    if cfg.LOSS.name == "dino_loss":
-        assert len(cfg.MODEL.HEAD.PARAMS) == 1
-        assert cfg.MODEL.HEAD.PARAMS[0][0] == "swav_head"
-        cfg.LOSS.dino_loss.output_dim = cfg.MODEL.HEAD.PARAMS[0][1]["num_clusters"][0]
-        cfg.LOSS.dino_loss.num_crops = total_num_crops or cfg.LOSS.dino_loss.num_crops
-        cfg.DATA.TRAIN.COLLATE_FUNCTION = "multicrop_collator"
 
     return cfg
 
@@ -577,9 +572,7 @@ def infer_and_assert_hydra_config(cfg):
     if cfg.METERS is not None:
         from vissl.models import is_feature_extractor_model
 
-        # Ensure backwards compatibility of cfg.METERS.name.
-        meter_name = cfg.METERS.get("name", "")
-        if meter_name:
+        if meter_name := cfg.METERS.get("name", ""):
             meter_names = set(cfg.METERS.get("names", []))
             meter_names.add(meter_name)
             cfg.METERS.names = list(meter_names)

@@ -97,10 +97,11 @@ class SetDataSamplerEpochHook(ClassyHook):
         # (Re-)Shuffle data:
         phase_type = "train" if task.train else "test"
         # set epoch of distributed sampler
-        if hasattr(task.dataloaders[phase_type], "sampler"):
-            if hasattr(task.dataloaders[phase_type].sampler, "set_epoch"):
-                # task.phase_idx is current running phase id
-                task.dataloaders[phase_type].sampler.set_epoch(task.phase_idx)
+        if hasattr(task.dataloaders[phase_type], "sampler") and hasattr(
+            task.dataloaders[phase_type].sampler, "set_epoch"
+        ):
+            # task.phase_idx is current running phase id
+            task.dataloaders[phase_type].sampler.set_epoch(task.phase_idx)
 
         # call set_epoch and for AirstoreDataset since it handles shuffle
         # behavior internally
@@ -223,10 +224,10 @@ class FreezeParametersHook(ClassyHook):
         """
         if len(task.config.MODEL.TEMP_FROZEN_PARAMS_ITER_MAP) == 0:
             return
-        map_params_to_iters = {}
-        for to_map in task.config.MODEL.TEMP_FROZEN_PARAMS_ITER_MAP:
-            map_params_to_iters[to_map[0]] = to_map[1]
-
+        map_params_to_iters = {
+            to_map[0]: to_map[1]
+            for to_map in task.config.MODEL.TEMP_FROZEN_PARAMS_ITER_MAP
+        }
         # get the maximum iterations until which the params are frozen.
         # if the iterations are past the maximum iterations freezing any
         # param, we simply return.

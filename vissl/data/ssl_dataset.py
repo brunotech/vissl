@@ -97,7 +97,7 @@ class GenericSSLDataset(VisslDatasetBase):
         self._verify_data_sources(split, dataset_source_map)
         self._get_data_files(split)
 
-        if len(self.label_sources) > 0 and len(self.label_paths) > 0:
+        if len(self.label_sources) > 0 and self.label_paths:
             assert len(self.label_sources) == len(self.label_paths), (
                 f"len(label_sources) != len(label paths) "
                 f"{len(self.label_sources)} vs. {len(self.label_paths)}"
@@ -194,12 +194,11 @@ class GenericSSLDataset(VisslDatasetBase):
         In case of strings, VISSL has to translate them into integers so that
         each integer corresponds to an index
         """
-        if isinstance(labels[0], str):
-            unique_labels = sorted(set(labels))
-            label_to_id = {label: idx for idx, label in enumerate(unique_labels)}
-            return np.array([label_to_id[label] for label in labels])
-        else:
+        if not isinstance(labels[0], str):
             return labels
+        unique_labels = sorted(set(labels))
+        label_to_id = {label: idx for idx, label in enumerate(unique_labels)}
+        return np.array([label_to_id[label] for label in labels])
 
     def load_labels(self):
         """
@@ -346,13 +345,9 @@ class GenericSSLDataset(VisslDatasetBase):
                     lbl = _convert_lbl_to_long(label_source[subset_idx])
                 item["label"].append(lbl)
         elif self.label_type == "sample_index":
-            item["label"] = []
-            for _ in range(len(self.data_objs)):
-                item["label"].append(idx)
+            item["label"] = [idx for _ in range(len(self.data_objs))]
         elif self.label_type == "zero":
-            item["label"] = []
-            for _ in range(len(self.data_objs)):
-                item["label"].append(0)
+            item["label"] = [0 for _ in range(len(self.data_objs))]
         else:
             raise ValueError(f"Unknown label type: {self.label_type}")
 

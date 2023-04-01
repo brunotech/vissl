@@ -114,7 +114,7 @@ def train_main(
     # print the training settings and system settings
     if local_rank == 0:
         print_cfg(cfg)
-        logging.info("System config:\n{}".format(collect_env_info()))
+        logging.info(f"System config:\n{collect_env_info()}")
 
     # get the hooks - these hooks are executed per replica
     hooks = hook_generator(cfg)

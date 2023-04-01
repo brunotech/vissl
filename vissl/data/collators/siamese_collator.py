@@ -62,9 +62,8 @@ def siamese_collator(batch):
             idx_labels = idx_labels.flatten()
         output_label.append(idx_labels)
 
-    output_batch = {
+    return {
         "data": output_data,
         "label": output_label,
         "data_valid": [data_valid],
     }
-    return output_batch

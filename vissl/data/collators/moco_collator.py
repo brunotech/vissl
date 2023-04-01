@@ -41,8 +41,10 @@ def moco_collator(batch: List[Dict[str, Any]]) -> Dict[str, List[torch.Tensor]]:
     data_valid = [torch.tensor(x["data_valid"]) for x in batch]
     data_idx = [torch.tensor(x["data_idx"]) for x in batch]
 
-    output_batch = {
-        "data": [torch.stack(data).squeeze()[:, 0, :, :, :].squeeze()],  # encoder
+    return {
+        "data": [
+            torch.stack(data).squeeze()[:, 0, :, :, :].squeeze()
+        ],  # encoder
         "data_momentum": [
             torch.stack(data).squeeze()[:, 1, :, :, :].squeeze()
         ],  # momentum encoder
@@ -50,5 +52,3 @@ def moco_collator(batch: List[Dict[str, Any]]) -> Dict[str, List[torch.Tensor]]:
         "data_valid": [torch.stack(data_valid).squeeze()],
         "data_idx": [torch.stack(data_idx).squeeze()],
     }
-
-    return output_batch

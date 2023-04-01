@@ -158,7 +158,7 @@ def setup_multiprocessing_method(method_name: str):
     """
     try:
         mp.set_start_method(method_name, force=True)
-        logging.info("Set start method of multiprocessing to {}".format(method_name))
+        logging.info(f"Set start method of multiprocessing to {method_name}")
     except RuntimeError:
         pass
 
@@ -233,9 +233,7 @@ def get_json_data_catalog_file():
     default_path = pkg_resources.resource_filename(
         "configs", "config/dataset_catalog.json"
     )
-    json_catalog_path = get_json_catalog_path(default_path)
-
-    return json_catalog_path
+    return get_json_catalog_path(default_path)
 
 
 @torch.no_grad()
@@ -249,8 +247,7 @@ def concat_all_gather(tensor):
     ]
     torch.distributed.all_gather(tensors_gather, tensor, async_op=False)
 
-    output = torch.cat(tensors_gather, dim=0)
-    return output
+    return torch.cat(tensors_gather, dim=0)
 
 
 def get_rng_state():
@@ -385,8 +382,5 @@ def recursive_dict_merge(dict1, dict2):
     if not isinstance(dict1, dict) or not isinstance(dict2, dict):
         return dict2
     for k in dict2:
-        if k in dict1:
-            dict1[k] = recursive_dict_merge(dict1[k], dict2[k])
-        else:
-            dict1[k] = dict2[k]
+        dict1[k] = recursive_dict_merge(dict1[k], dict2[k]) if k in dict1 else dict2[k]
     return dict1

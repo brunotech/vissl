@@ -190,7 +190,7 @@ def main():
         output_state_dict = {
             "classy_state_dict": {"base_model": {"model": {"trunk": converted_trunk}}}
         }
-    logger.info("Saving converted weights to: {}".format(args.output_model))
+    logger.info(f"Saving converted weights to: {args.output_model}")
     torch.save(output_state_dict, args.output_model)
     logger.info("Done!!")
 

@@ -64,7 +64,8 @@ class InverseSqrtScheduler(ClassyParamScheduler):
         )
 
     def __call__(self, where: float):
-        if where > 0.0:
-            return self.decay_factor * (where ** -0.5)
-        else:
-            return self.decay_factor
+        return (
+            self.decay_factor * (where**-0.5)
+            if where > 0.0
+            else self.decay_factor
+        )

@@ -118,7 +118,7 @@ def init_distributed_on_file(world_size: int, gpu_id: int, sync_file: str):
     torch.cuda.set_device(gpu_id)
     dist.init_process_group(
         backend="nccl",
-        init_method="file://" + sync_file,
+        init_method=f"file://{sync_file}",
         world_size=world_size,
         rank=gpu_id,
     )
@@ -160,8 +160,8 @@ def parse_losses_from_log_file(file_name: str):
                 continue
             match = regex.search(line)
             if match is not None:
-                iteration = int(match.group(1))
-                loss = float(match.group(2))
+                iteration = int(match[1])
+                loss = float(match[2])
                 iterations.append(iteration)
                 losses.append(loss)
     return iterations, losses

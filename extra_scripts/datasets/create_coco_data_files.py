@@ -60,9 +60,7 @@ def get_imgs_labels_info(split, json_file, args):
 
     num_cats = len(json_data["categories"])
     logger.info(
-        "partition: {} num_cats: {} num_images: {}".format(
-            split, num_cats, len(image_index)
-        )
+        f"partition: {split} num_cats: {num_cats} num_images: {len(image_index)}"
     )
     cat_ids = [x["id"] for x in json_data["categories"]]
     coco_to_me = {val: ind for ind, val in enumerate(cat_ids)}
@@ -89,7 +87,7 @@ def get_imgs_labels_info(split, json_file, args):
         valid_objs = get_valid_objs(entry, objs)
         if img_name not in img_labels_map:
             img_labels_map[img_name] = np.zeros(num_classes, dtype=np.int32)
-        for _, obj in enumerate(valid_objs):
+        for obj in valid_objs:
             cocoCatId = obj["category_id"]
             myId = coco_to_me[cocoCatId]
             img_labels_map[img_name][myId] = 1.0
@@ -136,7 +134,7 @@ def main():
     partitions = ["val", "train", "minival", "valminusminival"]
     for partition in partitions:
         annotation_file = f"{args.json_annotations_dir}/instances_{partition}2014.json"
-        logger.info("========Preparing {} data files========".format(partition))
+        logger.info(f"========Preparing {partition} data files========")
         imgs_info, lbls_info = get_imgs_labels_info(partition, annotation_file, args)
         img_info_out_path = f"{args.output_dir}/{partition}_images.npy"
         label_info_out_path = f"{args.output_dir}/{partition}_labels.npy"

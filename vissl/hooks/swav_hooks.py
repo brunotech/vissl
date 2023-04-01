@@ -31,7 +31,7 @@ class SwAVUpdateQueueScoresHook(ClassyHook):
         If we want to use queue in SwAV training,
         update the queue scores after every forward.
         """
-        if not task.config["LOSS"]["name"] == "swav_loss":
+        if task.config["LOSS"]["name"] != "swav_loss":
             return
         if not task.loss.swav_criterion.use_queue:
             return
@@ -59,7 +59,7 @@ class NormalizePrototypesHook(ClassyHook):
         """
         Optionally normalize prototypes
         """
-        if not task.config["LOSS"]["name"] == "swav_loss":
+        if task.config["LOSS"]["name"] != "swav_loss":
             return
         if not task.config.LOSS["swav_loss"].normalize_last_layer:
             return
@@ -68,7 +68,7 @@ class NormalizePrototypesHook(ClassyHook):
                 # This is either single GPU model or a FSDP.
                 assert len(task.model.heads) == 1
                 for j in range(task.model.heads[0].nmb_heads):
-                    module = getattr(task.model.heads[0], "prototypes" + str(j))
+                    module = getattr(task.model.heads[0], f"prototypes{str(j)}")
                     # Determine the context we need to use. For FSDP, we
                     # need the summon_full_params context, which ensures that
                     # full weights for this layer is all_gathered and after
@@ -87,9 +87,7 @@ class NormalizePrototypesHook(ClassyHook):
                 assert len(task.model.module.heads) == 1
                 for j in range(task.model.module.heads[0].nmb_heads):
                     w = getattr(
-                        task.model.module.heads[0], "prototypes" + str(j)
+                        task.model.module.heads[0], f"prototypes{str(j)}"
                     ).weight.data.clone()
                     w = nn.functional.normalize(w, dim=1, p=2)
-                    getattr(
-                        task.model.module.heads[0], "prototypes" + str(j)
-                    ).weight.copy_(w)
+                    getattr(task.model.module.heads[0], f"prototypes{str(j)}").weight.copy_(w)

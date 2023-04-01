@@ -33,7 +33,7 @@ class TestSimClrCriterionOnGpu(unittest.TestCase):
                     [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], device=f"cuda:{gpu_id}"
                 )
             )
-        if world_size == 2:
+        elif world_size == 2:
             assert gathered.equal(
                 torch.tensor(
                     [

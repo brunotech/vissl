@@ -38,18 +38,18 @@ def remove_jigsaw_names(data):
     for item in sorted(data.keys()):
         if "s0" in item:
             out_name = re.sub("_s[0-9]_", "_", item)
-            logger.info("input_name: {} out_name: {}".format(item, out_name))
+            logger.info(f"input_name: {item} out_name: {out_name}")
             output_blobs[out_name] = data[item]
         elif any(x in item for x in remove_suffixes):
             count += 1
-            logger.info("Ignoring: {}".format(item))
+            logger.info(f"Ignoring: {item}")
         else:
-            logger.info("adding: {}".format(item))
+            logger.info(f"adding: {item}")
             output_blobs[item] = data[item]
 
-    logger.info("Original #blobs: {}".format(len(data.keys())))
-    logger.info("Output #blobs: {}".format(len(output_blobs.keys())))
-    logger.info("Removed #blobs: {}".format(count))
+    logger.info(f"Original #blobs: {len(data.keys())}")
+    logger.info(f"Output #blobs: {len(output_blobs.keys())}")
+    logger.info(f"Removed #blobs: {count}")
     return output_blobs
 
 
@@ -98,7 +98,7 @@ def _rename_weights_for_resnet(weights, stage_names):
 
     # performs basic renaming: _ -> . , etc
     layer_keys = _rename_basic_resnet_weights(layer_keys)
-    key_map = {k: v for k, v in zip(original_keys, layer_keys)}
+    key_map = dict(zip(original_keys, layer_keys))
 
     logger.info("Remapping C2 weights")
     max_c2_key_size = max(len(k) for k in original_keys if "_momentum" not in k)
@@ -119,18 +119,14 @@ def _rename_weights_for_resnet(weights, stage_names):
             "C2 name: {: <{}} mapped name: {}".format(k, max_c2_key_size, key_map[k])
         )
         new_weights[key_map[k]] = w
-    logger.info("Number of blobs: {}".format(len(new_weights)))
+    logger.info(f"Number of blobs: {len(new_weights)}")
     return new_weights
 
 
 def _load_c2_pickled_weights(file_path):
     with g_pathmgr.open(file_path, "rb") as f:
         data = pickle.load(f, encoding="latin1")
-    if "blobs" in data:
-        weights = data["blobs"]
-    else:
-        weights = data
-    return weights
+    return data["blobs"] if "blobs" in data else data
 
 
 def convert_bgr2rgb(state_dict):
@@ -177,7 +173,7 @@ def main():
         state_dict = convert_bgr2rgb(state_dict)
 
     state_dict = _rename_weights_for_resnet(state_dict, stages)
-    logger.info("Saving converted weights to: {}".format(args.output_model))
+    logger.info(f"Saving converted weights to: {args.output_model}")
     torch.save(state_dict, args.output_model)
     logger.info("Done!!")
 

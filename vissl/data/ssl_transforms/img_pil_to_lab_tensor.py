@@ -37,9 +37,7 @@ class ImgPil2LabTensor(ClassyTransform):
         img_lab = self._convertbgr2lab(img_bgr.astype(np.uint8))
         # convert HWC -> CHW. The image is LAB.
         img_lab = np.transpose(img_lab, (2, 0, 1))
-        # torch tensor output
-        img_lab_tensor = torch.from_numpy(img_lab).float()
-        return img_lab_tensor
+        return torch.from_numpy(img_lab).float()
 
     def _convertbgr2lab(self, img):
         # opencv is not a hard dependency for VISSL so we do the import locally

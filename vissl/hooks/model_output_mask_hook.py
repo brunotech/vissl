@@ -82,11 +82,7 @@ class ModelOutputMaskHook(ClassyHook):
         if self.model_output_mask is not None:
             return self.model_output_mask
 
-        # Read the labels present and create the model_output_mask.
-        mask = []
-        for i in range(model_output.shape[-1]):
-            mask.append(i not in self.unique_labels)
-
+        mask = [i not in self.unique_labels for i in range(model_output.shape[-1])]
         self.model_output_mask = torch.tensor(mask, device=model_output.device)
 
         return self.model_output_mask

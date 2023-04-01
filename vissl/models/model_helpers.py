@@ -44,9 +44,7 @@ def transform_model_input_data_type(model_input, input_type: str):
     # In case the model takes BGR input type, we convert the RGB to BGR
     if input_type == "bgr":
         model_output = model_input[:, [2, 1, 0], :, :]
-    # In case of LAB image, we take only "L" channel as input. Split the data
-    # along the channel dimension into [L, AB] and keep only L channel.
-    if input_type == "lab":
+    elif input_type == "lab":
         model_output = torch.split(model_input, [1, 2], dim=1)[0]
     return model_output
 
@@ -302,12 +300,12 @@ def parse_out_keys_arg(
     """
 
     # By default return the features of the last layer / module.
-    if out_feat_keys is None or (len(out_feat_keys) == 0):
+    if out_feat_keys is None or not out_feat_keys:
         out_feat_keys = [all_feat_names[-1]]
 
-    if len(out_feat_keys) == 0:
+    if not out_feat_keys:
         raise ValueError("Empty list of output feature keys.")
-    for _, key in enumerate(out_feat_keys):
+    for key in out_feat_keys:
         if key not in all_feat_names:
             raise ValueError(
                 f"Feature with name {key} does not exist. "
@@ -497,10 +495,7 @@ def get_trunk_forward_outputs(
     if len(unique_out_feat_keys) == len(out_feat_keys):
         return list(unique_out_feats.values())
 
-    output_feats = []
-    for key_name in out_feat_keys:
-        output_feats.append(unique_out_feats[key_name])
-    return output_feats
+    return [unique_out_feats[key_name] for key_name in out_feat_keys]
 
 
 def lecun_normal_init(tensor, fan_in):
@@ -631,8 +626,7 @@ def drop_path(x, drop_prob: float = 0.0, training: bool = False):
     shape = (x.shape[0],) + (1,) * (x.ndim - 1)
     random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
     random_tensor.floor_()  # binarize
-    output = x.div(keep_prob) * random_tensor
-    return output
+    return x.div(keep_prob) * random_tensor
 
 
 class DropPath(nn.Module):

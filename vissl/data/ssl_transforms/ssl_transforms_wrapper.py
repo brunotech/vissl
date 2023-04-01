@@ -203,7 +203,7 @@ class SSLTransformsWrapper(ClassyTransform):
 
     def _transform(self, sample):
         # Run on all indices if empty set is passed.
-        indices = self.indices if self.indices else set(range(len(sample["data"])))
+        indices = self.indices or set(range(len(sample["data"])))
         if self._is_grouping_transform():
             # if the transform needs to be applied to all the indices
             # together. For example: one might want to vary the intensity

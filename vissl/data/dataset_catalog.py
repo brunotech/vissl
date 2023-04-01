@@ -66,7 +66,7 @@ class VisslDatasetCatalog(object):
         ), "You must register a dictionary with VisslDatasetCatalog.register_dict"
         assert (
             name not in VisslDatasetCatalog.__REGISTERED_DATASETS
-        ), "Dataset '{}' is already registered!".format(name)
+        ), f"Dataset '{name}' is already registered!"
         VisslDatasetCatalog.__REGISTERED_DATASETS[name] = data_dict
 
     @staticmethod
@@ -83,9 +83,7 @@ class VisslDatasetCatalog(object):
             info = VisslDatasetCatalog.__REGISTERED_DATASETS[name]
         except KeyError:
             raise KeyError(
-                "Dataset '{}' is not registered! Available datasets are: {}".format(
-                    name, ", ".join(VisslDatasetCatalog.__REGISTERED_DATASETS.keys())
-                )
+                f"""Dataset '{name}' is not registered! Available datasets are: {", ".join(VisslDatasetCatalog.__REGISTERED_DATASETS.keys())}"""
             )
         return info
 
@@ -118,8 +116,7 @@ class VisslDatasetCatalog(object):
         """
         Check whether the data with ``name`` exists.
         """
-        data_found = name in VisslDatasetCatalog.__REGISTERED_DATASETS
-        return data_found
+        return name in VisslDatasetCatalog.__REGISTERED_DATASETS
 
 
 def get_local_path(input_file, dest_dir):
@@ -145,10 +142,7 @@ def get_local_path(input_file, dest_dir):
         complete_flag = os.path.join(dest_dir, "copy_complete")
         if g_pathmgr.isfile(complete_flag):
             out = dest_dir
-    if g_pathmgr.exists(out):
-        return out
-    else:
-        return input_file
+    return out if g_pathmgr.exists(out) else input_file
 
 
 def get_local_output_filepaths(input_files, dest_dir):

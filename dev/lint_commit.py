@@ -80,10 +80,11 @@ def get_list_of_impacted_files(repo_dir: str) -> Sequence[str]:
     Return the full list of impacted files, either in the index or the working tree,
     combined such that deletion and renamings are ignored properly.
     """
-    files = set()
-    for diff in get_index_diff_file_names(repo_dir):
-        if diff.change_type not in {"D", "R"}:
-            files.add(diff.file_name)
+    files = {
+        diff.file_name
+        for diff in get_index_diff_file_names(repo_dir)
+        if diff.change_type not in {"D", "R"}
+    }
     for diff in get_working_diff_file_names(repo_dir):
         if diff.change_type != "D":
             files.add(diff.file_name)

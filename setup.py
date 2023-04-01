@@ -25,8 +25,7 @@ def get_version():
     )
     init_py = open(init_py_path, "r").readlines()
     version_line = [l.strip() for l in init_py if l.startswith("__version__")][0]
-    version = version_line.split("=")[-1].strip().strip("'\"")
-    return version
+    return version_line.split("=")[-1].strip().strip("'\"")
 
 
 packages = find_packages(exclude=("tests",)) + find_namespace_packages(

@@ -101,11 +101,10 @@ class DiskImageDataset(QueueDataset):
         Get paths of all images in the datasets. See load_data()
         """
         self._load_data(self._path)
-        if self.data_source == "disk_folder":
-            assert isinstance(self.image_dataset, ImageFolder)
-            return [sample[0] for sample in self.image_dataset.samples]
-        else:
+        if self.data_source != "disk_folder":
             return self.image_dataset
+        assert isinstance(self.image_dataset, ImageFolder)
+        return [sample[0] for sample in self.image_dataset.samples]
 
     @staticmethod
     def _replace_img_path_prefix(img_path: str, replace_prefix: str, new_prefix: str):

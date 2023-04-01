@@ -57,7 +57,7 @@ def _rename_weights_to_d2(weights, weights_type):
 
     # basic layer mapping to detectron names
     layer_keys = convert_to_detectron2_names(layer_keys)
-    key_map = {k: v for k, v in zip(original_keys, layer_keys)}
+    key_map = dict(zip(original_keys, layer_keys))
 
     logger.info("Remapping weights....")
     new_weights = OrderedDict()
@@ -71,7 +71,7 @@ def _rename_weights_to_d2(weights, weights_type):
         w = torch.from_numpy(v)
         logger.info(f"original name: {k} \t\t mapped name: {key_map[k]}")
         new_weights[key_map[k]] = w
-    logger.info("Number of params: {}".format(len(new_weights)))
+    logger.info(f"Number of params: {len(new_weights)}")
     return new_weights
 
 
@@ -111,7 +111,7 @@ def main():
 
     renamed_state_dict = _rename_weights_to_d2(vissl_state_dict, args.weights_type)
     state = {"model": renamed_state_dict, "matching_heuristics": True}
-    logger.info("Saving converted weights to: {}".format(args.output_model))
+    logger.info(f"Saving converted weights to: {args.output_model}")
     torch.save(state, args.output_model)
     logger.info("Done!!")
 

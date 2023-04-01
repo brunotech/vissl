@@ -30,16 +30,16 @@ def validate_files(input_files):
     The valid files will have name: <class_name>_<split>.txt. We want to remove
     all the other files from the input.
     """
-    output_files = []
-    for item in input_files:
-        if len(item.split("/")[-1].split("_")) == 2:
-            output_files.append(item)
-    return output_files
+    return [
+        item
+        for item in input_files
+        if len(item.split("/")[-1].split("_")) == 2
+    ]
 
 
 def get_data_files(split, args):
     data_dir = f"{args.data_source_dir}/ImageSets/Main"
-    assert g_pathmgr.exists(data_dir), "Data: {} doesn't exist".format(data_dir)
+    assert g_pathmgr.exists(data_dir), f"Data: {data_dir} doesn't exist"
     test_data_files = glob(os.path.join(data_dir, "*_test.txt"))
     test_data_files = validate_files(test_data_files)
     if args.separate_partitions > 0:
@@ -48,10 +48,10 @@ def get_data_files(split, args):
         train_data_files = validate_files(train_data_files)
         val_data_files = validate_files(val_data_files)
         assert len(train_data_files) == len(val_data_files)
-        if split == "train":
-            data_files = train_data_files
-        elif split == "test":
+        if split == "test":
             data_files = test_data_files
+        elif split == "train":
+            data_files = train_data_files
         else:
             data_files = val_data_files
     else:
@@ -94,9 +94,7 @@ def get_images_labels_info(split, args):
                         orig_label = -1
                     img_labels_map[img_name][cls_num] = orig_label
                 except Exception:
-                    logger.info(
-                        "Error processing: {} data_path: {}".format(line, data_path)
-                    )
+                    logger.info(f"Error processing: {line} data_path: {data_path}")
 
     img_paths, img_labels = [], []
     for item in sorted(img_labels_map.keys()):
@@ -160,7 +158,7 @@ def main():
         partitions.append("val")
 
     for partition in partitions:
-        logger.info("========Preparing {} data files========".format(partition))
+        logger.info(f"========Preparing {partition} data files========")
         imgs_info, lbls_info, output_dict = get_images_labels_info(partition, args)
         img_info_out_path = f"{args.output_dir}/{partition}_images.npy"
         label_info_out_path = f"{args.output_dir}/{partition}_labels.npy"
@@ -176,7 +174,7 @@ def main():
 
             with g_pathmgr.open(json_out_path, "w") as fp:
                 json.dump(output_dict, fp)
-            logger.info("Saved Json to: {}".format(json_out_path))
+            logger.info(f"Saved Json to: {json_out_path}")
     logger.info("DONE!")
 
 

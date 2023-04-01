@@ -39,8 +39,7 @@ def build_task(config):
     "foo": "bar"}` will find a class that was registered as "my_task"
     (see :func:`register_task`) and call .from_config on it."""
 
-    task = TASK_REGISTRY[config.TRAINER.TASK_NAME].from_config(config)
-    return task
+    return TASK_REGISTRY[config.TRAINER.TASK_NAME].from_config(config)
 
 
 class SelfSupervisionTrainer(object):
@@ -128,11 +127,7 @@ class SelfSupervisionTrainer(object):
             )
 
         logging.info(
-            "| initialized host {} as rank {} ({})".format(
-                socket.gethostname(),
-                self.distributed_rank,
-                torch.distributed.get_rank(),
-            )
+            f"| initialized host {socket.gethostname()} as rank {self.distributed_rank} ({torch.distributed.get_rank()})"
         )
         if use_gpu:
             set_cuda_device_index(self.local_rank)
@@ -170,8 +165,8 @@ class SelfSupervisionTrainer(object):
         task.run_hooks(SSLClassyHookFunctions.on_start.name)
 
         if is_primary():
-            logging.info("Model is:\n {}".format(task.model))
-            logging.info("Loss is: {}".format(task.loss))
+            logging.info(f"Model is:\n {task.model}")
+            logging.info(f"Loss is: {task.loss}")
         logging.info("Starting training....")
 
         while phase_idx + 1 < len(task.phases):
@@ -242,11 +237,7 @@ class SelfSupervisionTrainer(object):
         phase_idx, iteration_num = -1, -1
 
         # Ensure that train loader exists. Will NOT exist if config.TEST_ONLY is True
-        if "train" in task.dataloaders.keys():
-            loader_key = "train"
-        else:
-            loader_key = "test"
-
+        loader_key = "train" if "train" in task.dataloaders.keys() else "test"
         task.max_iteration = task.num_train_phases * len(task.dataloaders[loader_key])
 
         if task.checkpoint is not None:
@@ -298,24 +289,16 @@ class SelfSupervisionTrainer(object):
         # advance the epoch num to be current
         task.phase_idx += 1
         phase = task.phases[task.phase_idx]
-        task.train = True if phase["train"] else False
+        task.train = bool(phase["train"])
         if task.train:
             task.train_phase_idx += 1
 
         # get a new data iterator - delete the iterator at the beginning explicitly
         # so that all dataloader processes are cleaned up
         phase_type = "train" if phase["train"] else "test"
-        # we are advancing to next epoch, so no need to compute start_iter,
-        # just let it to be 0 inside of recreate_data_iterator. However, if we are just
-        # starting from the resumed training, we want to compute_start_iter
-        # again (if applicable) since we recreate the data iterator and delete
-        # the old ones.
-        compute_start_iter = False
-        if task.checkpoint is not None and task.checkpoint["train_phase_idx"] == (
-            task.train_phase_idx - 1
-        ):
-            compute_start_iter = True
-
+        compute_start_iter = task.checkpoint is not None and task.checkpoint[
+            "train_phase_idx"
+        ] == (task.train_phase_idx - 1)
         task.recreate_data_iterator(
             phase_type,
             epoch=task.phase_idx,
@@ -349,7 +332,7 @@ class SelfSupervisionTrainer(object):
         self._add_dummy_layer()
         self.task.init_distributed_data_parallel_model()
         if is_primary():
-            logging.info("Model is:\n {}".format(self.task.model))
+            logging.info(f"Model is:\n {self.task.model}")
 
         # Get the names of the features that we are extracting. If user doesn't
         # specify the features to evaluate, we get the full model output and freeze
@@ -372,8 +355,7 @@ class SelfSupervisionTrainer(object):
         assert isinstance(features, list), "features must be of type list"
         is_nested = isinstance(features[0], list)
         if is_nested:
-            flat_features_list = [item for sublist in features for item in sublist]
-            return flat_features_list
+            return [item for sublist in features for item in sublist]
         return features
 
     @staticmethod
@@ -465,7 +447,7 @@ class SelfSupervisionTrainer(object):
                         split=split_name,
                         output_folder=output_folder,
                     )
-                    for layer_name in out_features.keys():
+                    for layer_name in out_features:
                         out_features[layer_name].clear()
                     chunk_index += 1
                     feature_buffer_size = 0
@@ -489,8 +471,7 @@ class SelfSupervisionTrainer(object):
         add the dummy layer to the model and use DDP. We copy the model to
         gpu (if using gpus) after the new dummy layer addition.
         """
-        fully_frozen_model = self.task.base_model.is_fully_frozen_model()
-        if fully_frozen_model:
+        if fully_frozen_model := self.task.base_model.is_fully_frozen_model():
             self.task.base_model.dummy_layer = torch.nn.Linear(4, 4)
             if self.task.device.type == "cuda":
                 self.task.base_model = copy_model_to_gpu(self.task.base_model)
@@ -524,7 +505,7 @@ class SelfSupervisionTrainer(object):
         self._add_dummy_layer()
         self.task.init_distributed_data_parallel_model()
         if is_primary():
-            logging.info("Model is:\n {}".format(self.task.model))
+            logging.info(f"Model is:\n {self.task.model}")
 
         # Compute the cluster assignment on each worker in parallel
         cluster_assignment = {}
@@ -534,7 +515,7 @@ class SelfSupervisionTrainer(object):
             cluster_assignment[split] = self._get_cluster_assignment_for_split(
                 self.task, split
             )
-            logging.info("Done: " + msg)
+            logging.info(f"Done: {msg}")
         self._cleanup_task()
 
         # Merge the cluster assignments and group by cluster
@@ -579,7 +560,7 @@ class SelfSupervisionTrainer(object):
         separate parts of the dataset and merge them in a single map
         """
         merged_cluster_assignments = {}
-        for split in rank_cluster_assignment.keys():
+        for split in rank_cluster_assignment:
 
             split_assignments = list(rank_cluster_assignment[split].items())
             image_indices = [assignment[0] for assignment in split_assignments]

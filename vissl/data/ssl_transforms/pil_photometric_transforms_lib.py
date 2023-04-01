@@ -24,8 +24,7 @@ class TransformObject(object):
         return self.__class__.__name__
 
     def __repr__(self):
-        str = f"{self._get_name()}({self.root_transform})"
-        return str
+        return f"{self._get_name()}({self.root_transform})"
 
 
 class RandomValueApplier(TransformObject):
@@ -72,12 +71,7 @@ class RandomValueApplier(TransformObject):
         return self.root_transform(img, v)
 
     def __repr__(self):
-        str = (
-            f"{self._get_name()}(min_v={self.min_v}, max_v={self.max_v}, "
-            f"root_transform={self.root_transform}, vtype={self.vtype}, "
-            f"closed_interval={self.closed_interval})"
-        )
-        return str
+        return f"{self._get_name()}(min_v={self.min_v}, max_v={self.max_v}, root_transform={self.root_transform}, vtype={self.vtype}, closed_interval={self.closed_interval})"
 
 
 def Sharpness(img, v):

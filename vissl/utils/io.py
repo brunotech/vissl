@@ -162,8 +162,7 @@ def is_url(input_url):
     """
     Check if an input string is a url. look for http(s):// and ignoring the case
     """
-    is_url = re.match(r"^(?:http)s?://", input_url, re.IGNORECASE) is not None
-    return is_url
+    return re.match(r"^(?:http)s?://", input_url, re.IGNORECASE) is not None
 
 
 def cleanup_dir(dir):
@@ -181,8 +180,7 @@ def get_file_size(filename):
     """
     Given a file, get the size of file in MB
     """
-    size_in_mb = os.path.getsize(filename) / float(1024 ** 2)
-    return size_in_mb
+    return os.path.getsize(filename) / float(1024 ** 2)
 
 
 def copy_file(input_file, destination_dir, tmp_destination_dir):
@@ -222,24 +220,23 @@ def copy_file(input_file, destination_dir, tmp_destination_dir):
     destination_dir = get_slurm_dir(destination_dir)
     if "SLURM_JOBID" in os.environ:
         destination_dir = get_slurm_dir(destination_dir)
-    if destination_dir is not None:
-        makedir(destination_dir)
-        output_file = f"{destination_dir}/{os.path.basename(input_file)}"
-        if g_pathmgr.exists(output_file):
-            logging.info(f"File already copied: {output_file}")
-            return output_file, destination_dir
-
-        logging.info(f"Copying file: {input_file} to destination: {destination_dir}")
-        stime = time.perf_counter()
-        os.system(f"rsync -a --progress {out} {destination_dir}")
-        etime = time.perf_counter()
-        logging.info(
-            f"Copied file | time (sec): {round(etime - stime, 4)} "
-            f"size: {get_file_size(output_file)}"
-        )
-        return output_file, destination_dir
-    else:
+    if destination_dir is None:
         return out, output_dir
+    makedir(destination_dir)
+    output_file = f"{destination_dir}/{os.path.basename(input_file)}"
+    if g_pathmgr.exists(output_file):
+        logging.info(f"File already copied: {output_file}")
+        return output_file, destination_dir
+
+    logging.info(f"Copying file: {input_file} to destination: {destination_dir}")
+    stime = time.perf_counter()
+    os.system(f"rsync -a --progress {out} {destination_dir}")
+    etime = time.perf_counter()
+    logging.info(
+        f"Copied file | time (sec): {round(etime - stime, 4)} "
+        f"size: {get_file_size(output_file)}"
+    )
+    return output_file, destination_dir
 
 
 def copy_dir(input_dir, destination_dir, num_threads):
@@ -293,7 +290,7 @@ def copy_data(input_file, destination_dir, num_threads, tmp_destination_dir):
     """
     # return whatever the input is: whether "", None or anything else.
     logging.info(f"Creating directory: {destination_dir}")
-    if not (destination_dir is None or destination_dir == ""):
+    if destination_dir is not None and destination_dir != "":
         makedir(destination_dir)
     else:
         destination_dir = None

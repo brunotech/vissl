@@ -69,8 +69,7 @@ class PCA:
 
 
 def load_pca(pca_out_fname):
-    pca = load_file(pca_out_fname)
-    return pca
+    return load_file(pca_out_fname)
 
 
 def train_and_save_pca(features, n_pca, pca_out_fname):

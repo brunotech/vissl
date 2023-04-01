@@ -62,7 +62,7 @@ class ExtractedFeaturesLoader:
         for file_path in g_pathmgr.ls(input_dir):
             match = feature_regex.match(file_path)
             if match is not None:
-                prefixes.append(match.group(1))
+                prefixes.append(match[1])
 
         # Yield all the files needed to merge the features dumped on
         # the different GPUs
@@ -137,9 +137,9 @@ class ExtractedFeaturesLoader:
         features = np.array([output_feats[i] for i in indices])
         targets = np.array([output_targets[i] for i in indices])
 
-        # Return the outputs
-        N = len(indices)
         if flatten_features:
+            # Return the outputs
+            N = len(indices)
             features = features.reshape(N, -1)
         output = {
             "features": features,

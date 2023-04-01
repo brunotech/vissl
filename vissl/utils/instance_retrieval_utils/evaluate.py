@@ -26,10 +26,7 @@ def score_ap_from_ranks_1(ranks, nres):
     for ntp, rank in enumerate(ranks):
         # y-size on left side of trapezoid:
         # ntp = nb of true positives so far, rank = nb of retrieved items so far
-        if rank == 0:
-            precision_0 = 1.0
-        else:
-            precision_0 = ntp / float(rank)
+        precision_0 = 1.0 if rank == 0 else ntp / float(rank)
         # y-size on right side of trapezoid: ntp and rank are increased by one
         precision_1 = (ntp + 1) / float(rank + 1)
         ap += (precision_1 + precision_0) * recall_step / 2.0
@@ -60,11 +57,7 @@ def compute_ap(ranks, nres):
     for j in np.arange(nimgranks):
         rank = ranks[j]
 
-        if rank == 0:
-            precision_0 = 1.0
-        else:
-            precision_0 = float(j) / rank
-
+        precision_0 = 1.0 if rank == 0 else float(j) / rank
         precision_1 = float(j + 1) / (rank + 1)
 
         ap += (precision_0 + precision_1) * recall_step / 2.0
@@ -117,8 +110,6 @@ def compute_map(ranks, gnd, kappas):
             prs[i, :] = float("nan")
             nempty += 1
             continue
-            print(f"Skipping: {i}")
-
         try:
             qgndj = np.array(gnd[i]["junk"])
 
@@ -134,11 +125,11 @@ def compute_map(ranks, gnd, kappas):
         junk = np.arange(ranks.shape[0])[np.in1d(ranks[:, i], qgndj)]
 
         k = 0
-        ij = 0
         if len(junk):
             # decrease positions of positives based on the number of
             # junk images appearing before them
             ip = 0
+            ij = 0
             while ip < len(pos):
                 while ij < len(junk) and pos[ip] > junk[ij]:
                     k += 1

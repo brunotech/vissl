@@ -24,10 +24,7 @@ class ImgPilToRawTensor(ClassyTransform):
 
     def __call__(self, image):
         img = np.array(image)
-        # Image is of shape H x W x C. Convert to C x H x W and then torch tensor
-        # float.
-        img_raw_tensor = torch.from_numpy(img.transpose(2, 0, 1)).float()
-        return img_raw_tensor
+        return torch.from_numpy(img.transpose(2, 0, 1)).float()
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "ImgPilToRawTensor":

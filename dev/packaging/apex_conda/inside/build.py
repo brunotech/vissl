@@ -71,8 +71,8 @@ for python_version in python_versions:
         os.environ["PYTORCH_VERSION"] = ptv
         ptv_nodot = ptv.replace(".", "")
         os.environ["PYTORCH_VERSION_NODOT"] = ptv_nodot
-        os.environ["CONDA_PYTORCH_BUILD_CONSTRAINT"] = "- pytorch==" + ptv
-        os.environ["CONDA_PYTORCH_CONSTRAINT"] = "- pytorch==" + ptv
+        os.environ["CONDA_PYTORCH_BUILD_CONSTRAINT"] = f"- pytorch=={ptv}"
+        os.environ["CONDA_PYTORCH_CONSTRAINT"] = f"- pytorch=={ptv}"
         for cuv in CONDA_CUDA_VERSIONS[ptv]:
             os.environ["CU_VERSION"] = cuv
             os.environ["CUDA_HOME"] = CUDA_HOMES[cuv]

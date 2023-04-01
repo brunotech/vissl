@@ -91,11 +91,7 @@ def cutmixup_collator(batch, **kwargs):
     data_idx = [torch.tensor(x["data_idx"]) for x in batch]
     num_duplicates, num_images = len(data[0]), len(data)
 
-    # Determine ssl method and adjust collator output accordingly
-    ssl_method = None
-    if "ssl_method" in kwargs.keys():
-        ssl_method = kwargs.pop("ssl_method")
-
+    ssl_method = kwargs.pop("ssl_method") if "ssl_method" in kwargs else None
     # Instantiate CutMix + Mixup (CutMixUp!) object
     cutmixup_transform_obj = Mixup(**kwargs)
     # TODO: Uncomment in future update when calling via ClassyVision
@@ -121,7 +117,7 @@ def cutmixup_collator(batch, **kwargs):
     # If using moco or simclr, first restructure the data back into the form
     # in which it was originally input, then call the collator for that ssl
     # method
-    if ssl_method == "moco" or ssl_method == "simclr":
+    if ssl_method in ["moco", "simclr"]:
         output_batch = data_back_to_input_form(
             output_data, output_label, output_data_valid, output_data_idx
         )
@@ -166,17 +162,13 @@ def data_back_to_input_form(data, labels, data_valid, data_idx):
 # unless otherwise noted.
 def _recursive_mixup(sample: Any, permuted_indices: torch.Tensor, coeff: float):
     if isinstance(sample, (tuple, list)):
-        mixed_sample = []
-        for s in sample:
-            mixed_sample.append(_recursive_mixup(s, permuted_indices, coeff))
-
+        mixed_sample = [_recursive_mixup(s, permuted_indices, coeff) for s in sample]
         return mixed_sample if isinstance(sample, list) else tuple(mixed_sample)
     elif isinstance(sample, abc.Mapping):
-        mixed_sample = {}
-        for key, val in sample.items():
-            mixed_sample[key] = _recursive_mixup(val, permuted_indices, coeff)
-
-        return mixed_sample
+        return {
+            key: _recursive_mixup(val, permuted_indices, coeff)
+            for key, val in sample.items()
+        }
     else:
         assert torch.is_tensor(sample), "sample is expected to be a pytorch tensor"
         # Assume training data is at least 3D tensor (i.e. 1D data). We only

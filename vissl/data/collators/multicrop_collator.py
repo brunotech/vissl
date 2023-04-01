@@ -51,10 +51,9 @@ def multicrop_collator(batch, create_multidimensional_tensor: bool = False):
 
     if create_multidimensional_tensor:
         output_data = MultiDimensionalTensor.from_tensors(output_data)
-    output_batch = {
+    return {
         "data": [output_data],
         "label": [torch.stack(output_label)],
         "data_valid": [torch.stack(output_data_valid)],
         "data_idx": [torch.stack(output_data_idx)],
     }
-    return output_batch

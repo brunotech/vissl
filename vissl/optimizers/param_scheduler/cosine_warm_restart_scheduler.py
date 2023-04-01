@@ -164,7 +164,7 @@ class CosineWarmRestartScheduler(ClassyParamScheduler):
         elif self.wave_type == CosineWaveTypes.full:
             restart_num = max(bisect.bisect(self.restart_steps, where) - 1, 0)
             self._max_lr = self.lr_restart_values[restart_num]
-            where = where / float(self.restart_interval_length)
+            where /= float(self.restart_interval_length)
         return self._end_value + 0.5 * (self._max_lr - self._end_value) * (
             1 + math.cos(math.pi * where)
         )

@@ -83,10 +83,10 @@ class SwAVPrototypesHead(nn.Module):
                         momentum=model_config.HEAD.BATCHNORM_MOMENTUM,
                     )
                 )
-            if activation_name == "ReLU":
-                layers.append(nn.ReLU(inplace=True))
             if activation_name == "GELU":
                 layers.append(nn.GELU())
+            elif activation_name == "ReLU":
+                layers.append(nn.ReLU(inplace=True))
             last_dim = dim
         self.projection_head = nn.Sequential(*layers)
 
@@ -98,7 +98,7 @@ class SwAVPrototypesHead(nn.Module):
                 if use_weight_norm_prototypes:
                     proto = nn.utils.weight_norm(proto)
                     proto.weight_g.data.fill_(1)
-                self.add_module("prototypes" + str(i), proto)
+                self.add_module(f"prototypes{str(i)}", proto)
         else:
             self.nmb_heads = 0
         self.return_embeddings = return_embeddings
@@ -119,8 +119,10 @@ class SwAVPrototypesHead(nn.Module):
         if self.return_embeddings:
             out.append(batch)
         if self.nmb_heads > 0:
-            for i in range(self.nmb_heads):
-                out.append(getattr(self, "prototypes" + str(i))(batch))
+            out.extend(
+                getattr(self, f"prototypes{str(i)}")(batch)
+                for i in range(self.nmb_heads)
+            )
         return out
 
 
@@ -162,7 +164,7 @@ def SwavPrototypesHeadFSDP(
     fp32_fsdp_config["compute_dtype"] = torch.float32
 
     for j in range(head.nmb_heads):
-        module = getattr(head, "prototypes" + str(j))
+        module = getattr(head, f"prototypes{str(j)}")
         module = fsdp_wrapper(module, **fp32_fsdp_config)
-        setattr(head, "prototypes" + str(j), module)
+        setattr(head, f"prototypes{str(j)}", module)
     return fsdp_wrapper(head, **model_config.FSDP_CONFIG)

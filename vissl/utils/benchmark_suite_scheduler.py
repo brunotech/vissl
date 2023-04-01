@@ -302,11 +302,9 @@ class BenchmarkSuiteScheduler:
         ), "Training slurm checkpoint folder must exist"
 
     def _finished(self):
-        # Count total number of evaluation jobs.
-        total_jobs = 0
-        for benchmarks in self.evaluation_results.values():
-            total_jobs += len(benchmarks)
-
+        total_jobs = sum(
+            len(benchmarks) for benchmarks in self.evaluation_results.values()
+        )
         return len(self.evaluation_jobs_finished) == total_jobs
 
     def _evaluate_checkpoints(self):
@@ -435,23 +433,19 @@ class BenchmarkSuiteScheduler:
     def _get_benchmark_metrics(self, benchmark):
         metrics_file = os.path.join(benchmark["slurm_checkpoint_dir"], "metrics.json")
 
-        if g_pathmgr.exists(metrics_file):
-            # Open metrics file from finished evaluation job.
-            metrics = []
-            with g_pathmgr.open(metrics_file, "rb") as f:
-                for line in f:
-                    metrics.append(json.loads(line))
-
-            final_metrics = collections.defaultdict(lambda: {"metric": -1})
-
-            self._set_largest_metric(metrics, final_metrics)
-
-            result = dict(final_metrics)
-        else:
-            result = """Evaluation Job has completed, but metrics.json is not available.
+        if not g_pathmgr.exists(metrics_file):
+            return """Evaluation Job has completed, but metrics.json is not available.
                         Please check the evaluation's checkpoint_dir."""
 
-        return result
+        # Open metrics file from finished evaluation job.
+        metrics = []
+        with g_pathmgr.open(metrics_file, "rb") as f:
+            metrics.extend(json.loads(line) for line in f)
+        final_metrics = collections.defaultdict(lambda: {"metric": -1})
+
+        self._set_largest_metric(metrics, final_metrics)
+
+        return dict(final_metrics)
 
     def _set_largest_metric(self, metrics, final_metrics):
         # Get the largest metrics over all recorded metrics.

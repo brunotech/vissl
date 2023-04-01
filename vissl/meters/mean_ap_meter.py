@@ -84,24 +84,24 @@ class MeanAPMeter(ClassyMeter):
         Do a gather over all embeddings, so we can compute the loss.
         Final shape is like: (batch_size * num_gpus) x embedding_dim
         """
-        if torch.distributed.is_available() and torch.distributed.is_initialized():
-            # gather all embeddings.
-            scores_gathered = gather_from_all(scores)
-        else:
-            scores_gathered = scores
-        return scores_gathered
+        return (
+            gather_from_all(scores)
+            if torch.distributed.is_available()
+            and torch.distributed.is_initialized()
+            else scores
+        )
 
     def gather_targets(self, targets: torch.Tensor):
         """
         Do a gather over all embeddings, so we can compute the loss.
         Final shape is like: (batch_size * num_gpus) x embedding_dim
         """
-        if torch.distributed.is_available() and torch.distributed.is_initialized():
-            # gather all embeddings.
-            targets_gathered = gather_from_all(targets)
-        else:
-            targets_gathered = targets
-        return targets_gathered
+        return (
+            gather_from_all(targets)
+            if torch.distributed.is_available()
+            and torch.distributed.is_initialized()
+            else targets
+        )
 
     def sync_state(self):
         """

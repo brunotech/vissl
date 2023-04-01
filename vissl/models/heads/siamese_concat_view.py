@@ -44,5 +44,4 @@ class SiameseConcatView(nn.Module):
             siamese_batch_size % self.num_towers == 0
         ), f"{siamese_batch_size} not divisible by num_towers {self.num_towers}"
         batch_size = siamese_batch_size // self.num_towers
-        out = batch.view(batch_size, -1)
-        return out
+        return batch.view(batch_size, -1)

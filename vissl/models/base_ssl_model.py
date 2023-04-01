@@ -148,11 +148,7 @@ class BaseSSLMultiInputOutputModel(ClassyModel):
         """
         # Example case: training linear classifiers on various layers
         if len(feats) == len(heads):
-            output = []
-            for feat, head in zip(feats, heads):
-                output.append(head(feat))
-            return output
-        # Example case: Head consisting of several layers
+            return [head(feat) for feat, head in zip(feats, heads)]
         elif (len(heads) > 1) and (len(feats) == 1):
             output = feats[0]
             for head in heads:
@@ -221,9 +217,7 @@ class BaseSSLMultiInputOutputModel(ClassyModel):
         heads_trainable_params = list(
             filter(lambda x: x.requires_grad, heads_params_list)
         )
-        if len(trunk_trainable_params) == 0 and len(heads_trainable_params) == 0:
-            return True
-        return False
+        return not trunk_trainable_params and not heads_trainable_params
 
     def get_features(self, batch):
         """
@@ -234,8 +228,7 @@ class BaseSSLMultiInputOutputModel(ClassyModel):
         The trunk will already have the feature extractor Pooling layers and flattened
         features attached. feature extractor heads are part of the trunk already.
         """
-        feats = self.trunk(batch)
-        return feats
+        return self.trunk(batch)
 
     def _get_trunk(self):
         """
@@ -272,8 +265,7 @@ class BaseSSLMultiInputOutputModel(ClassyModel):
             pytorch module for the head
         """
         head_name, head_kwargs = head_param[0], head_param[1]
-        head_module = get_model_head(head_name)(self.model_config, **head_kwargs)
-        return head_module
+        return get_model_head(head_name)(self.model_config, **head_kwargs)
 
     def _get_heads(self):
         """
@@ -483,12 +475,12 @@ class BaseSSLMultiInputOutputModel(ClassyModel):
                 self.heads.state_dict(),
             )
             model_state_dict = {}
-            model_state_dict.update(trunk_state_dict)
+            model_state_dict |= trunk_state_dict
             model_state_dict.update(heads_state_dict)
 
             # get the checkpoint state dict
             checkpoint_state_dict = {}
-            checkpoint_state_dict.update(state["model"]["trunk"])
+            checkpoint_state_dict |= state["model"]["trunk"]
             checkpoint_state_dict.update(state["model"]["heads"])
             params_from_file = self.model_config["WEIGHTS_INIT"]
             skip_layers = params_from_file.get("SKIP_LAYERS", [])

@@ -108,14 +108,14 @@ class KITTIDistance:
         """
         vehicle_types = {"Car", "Van", "Truck"}
         with open(
-            os.path.join(self.annotation_folder, annotation_name), "r"
-        ) as annotations:
+                os.path.join(self.annotation_folder, annotation_name), "r"
+            ) as annotations:
             distances = []
             for annotation in annotations:
                 annotation = annotation.split()
                 object_type = annotation[0]
-                object_dist = float(annotation[13])
                 if object_type in vehicle_types:
+                    object_dist = float(annotation[13])
                     distances.append(object_dist)
             return min(distances, default=-math.inf)
 

@@ -55,8 +55,7 @@ class BarlowTwinsLoss(ClassyLoss):
         return cls(loss_config)
 
     def forward(self, output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        loss = self.bt_criterion(output)
-        return loss
+        return self.bt_criterion(output)
 
     def __repr__(self):
         repr_dict = {
@@ -146,9 +145,7 @@ class BarlowTwinsCriterion(nn.Module):
         off_diag = (
             self._off_diagonal(correlation_matrix).pow(2).sum().mul(self.scale_loss)
         )
-        loss = on_diag + self.lambda_ * off_diag
-
-        return loss
+        return on_diag + self.lambda_ * off_diag
 
     def __repr__(self):
         repr_dict = {

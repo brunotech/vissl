@@ -62,8 +62,7 @@ def collect_gpus_info(data):
         for name, devids in devices.items():
             data.append(("GPU " + ",".join(devids), name))
         data.append(("CUDA_HOME", str(CUDA_HOME)))
-        cuda_arch_list = os.environ.get("TORCH_CUDA_ARCH_LIST", None)
-        if cuda_arch_list:
+        if cuda_arch_list := os.environ.get("TORCH_CUDA_ARCH_LIST", None):
             data.append(("TORCH_CUDA_ARCH_LIST", cuda_arch_list))
     return data
 
@@ -90,7 +89,10 @@ def collect_dep_env(data):
         import hydra
 
         data.append(
-            ("hydra", str(hydra.__version__) + " @" + os.path.dirname(hydra.__file__))
+            (
+                "hydra",
+                f"{str(hydra.__version__)} @{os.path.dirname(hydra.__file__)}",
+            )
         )
     except ImportError:
         pass
@@ -148,7 +150,10 @@ def collect_vissl_info(data):
         import vissl  # noqa
 
         data.append(
-            ("vissl", vissl.__version__ + " @" + os.path.dirname(vissl.__file__))
+            (
+                "vissl",
+                f"{vissl.__version__} @{os.path.dirname(vissl.__file__)}",
+            )
         )
     except ImportError:
         data.append(("vissl", "failed to import"))
@@ -167,8 +172,7 @@ def collect_cpu_info():
         if key == "Flags":
             continue
         out_cpu_info.append((key, item.strip("\n").split(":")[1].strip()))
-    out_cpu_info = tabulate(out_cpu_info)
-    return out_cpu_info
+    return tabulate(out_cpu_info)
 
 
 def collect_env_info():
@@ -186,7 +190,7 @@ def collect_env_info():
 
     # append torch info
     torch_version = torch.__version__
-    data.append(("PyTorch", torch_version + " @" + os.path.dirname(torch.__file__)))
+    data.append(("PyTorch", f"{torch_version} @{os.path.dirname(torch.__file__)}"))
     data.append(("PyTorch debug build", torch.version.debug))
 
     env_str = tabulate(data) + "\n"

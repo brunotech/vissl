@@ -84,7 +84,7 @@ def extract_clusters(
     # print the training settings and system settings
     if local_rank == 0:
         print_cfg(cfg)
-        logging.info("System config:\n{}".format(collect_env_info()))
+        logging.info(f"System config:\n{collect_env_info()}")
 
     # Build the SSL trainer to set up distributed training and then
     # extract the cluster assignments for all entries in the dataset

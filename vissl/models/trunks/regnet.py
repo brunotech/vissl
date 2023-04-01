@@ -67,10 +67,7 @@ class RegNet(nn.Module):
 
         # We're only interested in the stem and successive blocks
         # everything else is not picked up on purpose
-        feature_blocks: List[Tuple[str, nn.Module]] = []
-
-        # - get the stem
-        feature_blocks.append(("conv1", model.stem))
+        feature_blocks: List[Tuple[str, nn.Module]] = [("conv1", model.stem)]
 
         # - get all the feature blocks
         for k, v in model.trunk_output.named_children():
@@ -78,15 +75,14 @@ class RegNet(nn.Module):
             block_index = len(feature_blocks) + 1
             feature_blocks.append((f"res{block_index}", v))
 
-        # - finally, add avgpool and flatten.
-        feature_blocks.append(("avgpool", nn.AdaptiveAvgPool2d((1, 1))))
-        feature_blocks.append(("flatten", Flatten(1)))
-
+        feature_blocks.extend(
+            (("avgpool", nn.AdaptiveAvgPool2d((1, 1))), ("flatten", Flatten(1)))
+        )
         self._feature_blocks = nn.ModuleDict(feature_blocks)
 
     def forward(self, x, out_feat_keys: List[str] = None) -> List[torch.Tensor]:
         if isinstance(x, MultiDimensionalTensor):
-            out = get_tunk_forward_interpolated_outputs(
+            return get_tunk_forward_interpolated_outputs(
                 input_type=self.model_config.INPUT_TYPE,
                 interpolate_out_feat_key_name="res5",
                 remove_padding_before_feat_key_name="avgpool",
@@ -95,15 +91,13 @@ class RegNet(nn.Module):
                 use_checkpointing=self.use_activation_checkpointing,
                 checkpointing_splits=self.activation_checkpointing_splits,
             )
-        else:
-            model_input = transform_model_input_data_type(
-                x, self.model_config.INPUT_TYPE
-            )
-            out = get_trunk_forward_outputs(
-                feat=model_input,
-                out_feat_keys=out_feat_keys,
-                feature_blocks=self._feature_blocks,
-                use_checkpointing=self.use_activation_checkpointing,
-                checkpointing_splits=self.activation_checkpointing_splits,
-            )
-        return out
+        model_input = transform_model_input_data_type(
+            x, self.model_config.INPUT_TYPE
+        )
+        return get_trunk_forward_outputs(
+            feat=model_input,
+            out_feat_keys=out_feat_keys,
+            feature_blocks=self._feature_blocks,
+            use_checkpointing=self.use_activation_checkpointing,
+            checkpointing_splits=self.activation_checkpointing_splits,
+        )

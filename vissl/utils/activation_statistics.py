@@ -109,10 +109,7 @@ class ActivationStatisticsMonitor:
 
     def _create_pre_forward_hook(self, name: str):
         def _pre_forward_hook(module: nn.Module, inputs):
-            if self._should_log(module):
-                self._previous_module_name = name
-            else:
-                self._previous_module_name = None
+            self._previous_module_name = name if self._should_log(module) else None
 
         return _pre_forward_hook
 
@@ -156,7 +153,7 @@ class ActivationStatisticsMonitor:
 
     @staticmethod
     def _get_qualified_type(module: nn.Module):
-        return type(module).__module__ + "." + type(module).__name__
+        return f"{type(module).__module__}.{type(module).__name__}"
 
     @staticmethod
     def _collect_tensors(module_outputs):
@@ -166,7 +163,7 @@ class ActivationStatisticsMonitor:
             x = to_visit.pop()
             if isinstance(x, torch.Tensor):
                 tensors.append(x)
-            elif isinstance(x, tuple) or isinstance(x, list):
+            elif isinstance(x, (tuple, list)):
                 to_visit.extend(module_outputs)
         return tensors
 

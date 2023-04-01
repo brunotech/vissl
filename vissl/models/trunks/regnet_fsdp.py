@@ -415,7 +415,7 @@ class RegNetV2(nn.Module):
 
     def forward(self, x, out_feat_keys: List[str] = None) -> List[torch.Tensor]:
         if isinstance(x, MultiDimensionalTensor):
-            out = get_tunk_forward_interpolated_outputs(
+            return get_tunk_forward_interpolated_outputs(
                 input_type=self.model_config.INPUT_TYPE,
                 interpolate_out_feat_key_name="res5",
                 remove_padding_before_feat_key_name="avgpool",
@@ -424,18 +424,16 @@ class RegNetV2(nn.Module):
                 use_checkpointing=self.use_activation_checkpointing,
                 checkpointing_splits=self.activation_checkpointing_splits,
             )
-        else:
-            model_input = transform_model_input_data_type(
-                x, self.model_config.INPUT_TYPE
-            )
-            out = get_trunk_forward_outputs(
-                feat=model_input,
-                out_feat_keys=out_feat_keys,
-                feature_blocks=self._feature_blocks,
-                use_checkpointing=self.use_activation_checkpointing,
-                checkpointing_splits=self.activation_checkpointing_splits,
-            )
-        return out
+        model_input = transform_model_input_data_type(
+            x, self.model_config.INPUT_TYPE
+        )
+        return get_trunk_forward_outputs(
+            feat=model_input,
+            out_feat_keys=out_feat_keys,
+            feature_blocks=self._feature_blocks,
+            use_checkpointing=self.use_activation_checkpointing,
+            checkpointing_splits=self.activation_checkpointing_splits,
+        )
 
 
 @register_model_trunk("regnet_fsdp")
@@ -472,7 +470,7 @@ class _RegNetFSDP(nn.Module):
 
     def forward(self, x, out_feat_keys: List[str] = None) -> List[torch.Tensor]:
         if isinstance(x, MultiDimensionalTensor):
-            out = get_tunk_forward_interpolated_outputs(
+            return get_tunk_forward_interpolated_outputs(
                 input_type=self.model_config.INPUT_TYPE,
                 interpolate_out_feat_key_name="res5",
                 remove_padding_before_feat_key_name="avgpool",
@@ -482,16 +480,14 @@ class _RegNetFSDP(nn.Module):
                 use_checkpointing=False,
                 checkpointing_splits=0,
             )
-        else:
-            model_input = transform_model_input_data_type(
-                x, self.model_config.INPUT_TYPE
-            )
-            out = get_trunk_forward_outputs(
-                feat=model_input,
-                out_feat_keys=out_feat_keys,
-                feature_blocks=self._feature_blocks,
-                # FSDP has its own activation checkpoint method: disable vissl's method here.
-                use_checkpointing=False,
-                checkpointing_splits=0,
-            )
-        return out
+        model_input = transform_model_input_data_type(
+            x, self.model_config.INPUT_TYPE
+        )
+        return get_trunk_forward_outputs(
+            feat=model_input,
+            out_feat_keys=out_feat_keys,
+            feature_blocks=self._feature_blocks,
+            # FSDP has its own activation checkpoint method: disable vissl's method here.
+            use_checkpointing=False,
+            checkpointing_splits=0,
+        )

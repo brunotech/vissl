@@ -157,10 +157,7 @@ class PerfMetric:
         """
         Get the mean value of the metrics recorded.
         """
-        if self.num_updates == 0:
-            return 0.0
-        else:
-            return self.sum_values / self.num_updates
+        return 0.0 if self.num_updates == 0 else self.sum_values / self.num_updates
 
 
 class PerfStats:
@@ -234,16 +231,15 @@ class PerfStats:
         )
         row_fmt = "{:>" + str(name_width + 4) + "s}: {:>7.2f} ms {:>7.2f} ms"
 
-        rows = []
-        rows.append(header)
-        for name, metric in self._host_stats.items():
-            rows.append(
-                row_fmt.format(
-                    name,
-                    metric.get_avg() * 1000.0,
-                    self._cuda_stats[name].get_avg() * 1000.0,
-                )
+        rows = [header]
+        rows.extend(
+            row_fmt.format(
+                name,
+                metric.get_avg() * 1000.0,
+                self._cuda_stats[name].get_avg() * 1000.0,
             )
+            for name, metric in self._host_stats.items()
+        )
         return "\n".join(rows)
 
     def use_cuda_events(self):

@@ -67,9 +67,7 @@ def get_coco_imgs_labels_info(split, data_source_dir, args):
 
     num_cats = len(json_data["categories"])
     logging.info(
-        "partition: {} num_cats: {} num_images: {}".format(
-            split, num_cats, len(image_index)
-        )
+        f"partition: {split} num_cats: {num_cats} num_images: {len(image_index)}"
     )
     cat_ids = [x["id"] for x in json_data["categories"]]
     coco_to_me = {val: ind for ind, val in enumerate(cat_ids)}
@@ -96,7 +94,7 @@ def get_coco_imgs_labels_info(split, data_source_dir, args):
         valid_objs = get_valid_objs(entry, objs)
         if img_name not in img_labels_map:
             img_labels_map[img_name] = np.zeros(num_classes, dtype=np.int32)
-        for _, obj in enumerate(valid_objs):
+        for obj in valid_objs:
             cocoCatId = obj["category_id"]
             myId = coco_to_me[cocoCatId]
             img_labels_map[img_name][myId] = 1.0

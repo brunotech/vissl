@@ -44,10 +44,9 @@ def print_system_env_info(current_env):
     """
     Print information about user system environment where VISSL is running.
     """
-    keys = list(current_env.keys())
-    keys.sort()
+    keys = sorted(current_env.keys())
     for key in keys:
-        logging.info("{}:\t{}".format(key, current_env[key]))
+        logging.info(f"{key}:\t{current_env[key]}")
 
 
 def get_machine_local_and_dist_rank():

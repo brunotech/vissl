@@ -17,10 +17,7 @@ class AttrDict(dict):
         super().__init__()
 
         for key, value in dictionary.items():
-            if isinstance(value, dict):
-                self[key] = AttrDict(value)
-            else:
-                self[key] = value
+            self[key] = AttrDict(value) if isinstance(value, dict) else value
 
     def to_dict(self):
         """
@@ -29,13 +26,10 @@ class AttrDict(dict):
         Helpful to feed the configuration to generic functions
         which only accept primitive types
         """
-        dict = {}
-        for k, v in self.items():
-            if isinstance(v, AttrDict):
-                dict[k] = v.to_dict()
-            else:
-                dict[k] = v
-        return dict
+        return {
+            k: v.to_dict() if isinstance(v, AttrDict) else v
+            for k, v in self.items()
+        }
 
     def __getattr__(self, key):
         """

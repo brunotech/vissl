@@ -83,17 +83,18 @@ def _assign_regularized_params(
     # Iterate through new parameters to unregularize
     for unreg_param_ind, new_unreg_param in enumerate(parameters_to_unregularize):
         # Iterate through list of regularized parameters
-        for reg_param_ind, reg_param in enumerate(regularized_param_list):
-            # Note any matches
-            if reg_param is new_unreg_param:
-                indices_to_remove_from_regularized.append(reg_param_ind)
+        indices_to_remove_from_regularized.extend(
+            reg_param_ind
+            for reg_param_ind, reg_param in enumerate(regularized_param_list)
+            if reg_param is new_unreg_param
+        )
         if unregularized_param_list:
             # Iterate through pre-existing list of unregularized parameters
-            for unreg_param in unregularized_param_list:
-                # Note any matches
-                if unreg_param is new_unreg_param:
-                    indices_to_remove_from_new_unregularized.append(unreg_param_ind)
-
+            indices_to_remove_from_new_unregularized.extend(
+                unreg_param_ind
+                for unreg_param in unregularized_param_list
+                if unreg_param is new_unreg_param
+            )
     # Iterate through indices to remove from list regularized params and
     # remove them
     indices_to_remove_from_regularized.sort(reverse=True)
@@ -142,18 +143,13 @@ def get_optimizer_param_groups(
             }
         ]
     """
-    if "weight_decay" in optimizer_schedulers:
-        weight_decay_main_config = optimizer_schedulers["weight_decay"]
-    else:
-        weight_decay_main_config = optimizer_config.weight_decay
-
-    if "weight_decay_head" in optimizer_schedulers:
-        weight_decay_head_main_config = optimizer_schedulers["weight_decay_head"]
-    else:
-        weight_decay_head_main_config = (
-            optimizer_config.head_optimizer_params.weight_decay
-        )
-
+    weight_decay_main_config = optimizer_schedulers.get(
+        "weight_decay", optimizer_config.weight_decay
+    )
+    weight_decay_head_main_config = optimizer_schedulers.get(
+        "weight_decay_head",
+        optimizer_config.head_optimizer_params.weight_decay,
+    )
     if optimizer_config.construct_single_param_group_only:
         # If single param_group is asked, we just use the parameters
         # returned from model.parameters(). This is useful in FSDP
@@ -182,9 +178,7 @@ def get_optimizer_param_groups(
     for name, module in model.named_modules():
 
         # head, Linear/Conv layer
-        if "head" in name and (
-            isinstance(module, nn.Linear) or isinstance(module, _CONV_TYPES)
-        ):
+        if "head" in name and (isinstance(module, (nn.Linear, _CONV_TYPES))):
             # weight normalized linear layers, used in swav_prototypes_head for example,
             # have "weight_g" and "weight_v" parameters in place of "weight"
             if hasattr(module, "weight_g"):
@@ -198,7 +192,6 @@ def get_optimizer_param_groups(
                 else:
                     head_unregularized_params.append(module.bias)
 
-        # head, BN/LN layer
         elif "head" in name and isinstance(module, _NORM_TYPES):
             (
                 head_regularized_params,
@@ -210,8 +203,7 @@ def get_optimizer_param_groups(
                 optimizer_config,
             )
 
-        # trunk, Linear/Conv
-        elif isinstance(module, nn.Linear) or isinstance(module, _CONV_TYPES):
+        elif isinstance(module, (nn.Linear, _CONV_TYPES)):
             if hasattr(module, "weight_g"):  # weight_norm linear layers
                 trunk_regularized_params.append(module.weight_g)
                 trunk_regularized_params.append(module.weight_v)
@@ -223,7 +215,6 @@ def get_optimizer_param_groups(
                 else:
                     trunk_unregularized_params.append(module.bias)
 
-        # trunk, BN/LN layer
         elif isinstance(module, _NORM_TYPES):
             (
                 trunk_regularized_params,
@@ -234,14 +225,12 @@ def get_optimizer_param_groups(
                 trunk_unregularized_params,
                 optimizer_config,
             )
-        elif len(list(module.children())) >= 0:
+        else:
             # for any other layers not bn_types, conv_types or nn.Linear, if
             # the layers are the leaf nodes and have parameters, we regularize
             # them. Similarly, if non-leaf nodes but have parameters, regularize
             # them (set recurse=False)
-            for params in module.parameters(recurse=False):
-                regularized_params.append(params)
-
+            regularized_params.extend(iter(module.parameters(recurse=False)))
     # Collect user-specified non-regularized params and remove them for the
     # lists of regularized params, and check they're not already on the lists
     # of unregularized params
@@ -331,7 +320,7 @@ def get_optimizer_param_groups(
                 "weight_decay": weight_decay_main_config,
             }
         )
-    if len(unregularized_params) > 0:
+    if unregularized_params:
         param_groups.append(
             {
                 "params": unregularized_params,

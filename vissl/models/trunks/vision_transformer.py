@@ -133,10 +133,7 @@ class Block(nn.Module):
             attn_drop=attn_drop,
             proj_drop=drop,
         )
-        if drop_path > 0.0:
-            self.drop_path = DropPath(drop_path)
-        else:
-            self.drop_path = nn.Identity()
+        self.drop_path = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
         self.norm2 = norm_layer(dim)
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp = Mlp(
@@ -191,7 +188,6 @@ class VisionTransformer(nn.Module):
 
         img_size = trunk_config.image_size
         patch_size = trunk_config.patch_size
-        in_chans = 3
         embed_dim = trunk_config.hidden_dim
         depth = trunk_config.num_layers
         num_heads = trunk_config.num_heads
@@ -216,14 +212,8 @@ class VisionTransformer(nn.Module):
             self.patch_embed = globals()[hybrid_backbone_string](
                 out_dim=embed_dim, img_size=img_size
             )
-        # if hybrid_backbone is not None:
-        #     self.patch_embed = HybridEmbed(
-        #         hybrid_backbone,
-        #         img_size=img_size,
-        #         in_chans=in_chans,
-        #         embed_dim=embed_dim,
-        #     )
         else:
+            in_chans = 3
             self.patch_embed = PatchEmbed(
                 img_size=img_size,
                 patch_size=patch_size,
@@ -332,7 +322,7 @@ class VisionTransformer(nn.Module):
     def forward(
         self, x: torch.Tensor, out_feat_keys: List[str] = None
     ) -> List[torch.Tensor]:
-        if out_feat_keys is None or len(out_feat_keys) == 0:
+        if out_feat_keys is None or not out_feat_keys:
             x = self.forward_features(x)
             x = x.unsqueeze(0)
         else:

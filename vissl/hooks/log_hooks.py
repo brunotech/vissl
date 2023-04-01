@@ -206,14 +206,8 @@ class LogLossLrEtaHook(ClassyHook):
         """
         phase_type = "train" if task.train else "test"
         if is_primary() and phase_type == "train":
-            train_phase_idx = task.train_phase_idx
             log_freq = task.config["LOG_FREQUENCY"]
             iteration = task.iteration
-
-            if torch.cuda.is_available():
-                peak_mem_used = int(torch.cuda.max_memory_allocated() / 1024.0 / 1024.0)
-            else:
-                peak_mem_used = -1
 
             if (
                 (iteration == 1)
@@ -221,10 +215,7 @@ class LogLossLrEtaHook(ClassyHook):
                 or (iteration <= 100 and iteration % 5 == 0)
             ):
                 loss_val = round(task.last_batch.loss.data.cpu().item(), 5)
-                if len(task.batch_time) > 0:
-                    batch_times = task.batch_time
-                else:
-                    batch_times = [0]
+                batch_times = task.batch_time if len(task.batch_time) > 0 else [0]
                 avg_time = sum(batch_times) / len(batch_times)
 
                 eta_secs = avg_time * (task.max_iteration - iteration)
@@ -235,6 +226,12 @@ class LogLossLrEtaHook(ClassyHook):
                     lr_val = round(task.optimizer.options_view.lr, 5)
                 batch_time = int(1000.0 * avg_time)
                 rank = get_rank()
+                peak_mem_used = (
+                    int(torch.cuda.max_memory_allocated() / 1024.0 / 1024.0)
+                    if torch.cuda.is_available()
+                    else -1
+                )
+                train_phase_idx = task.train_phase_idx
                 log_data = {
                     "Rank": rank,
                     "ep": train_phase_idx,
@@ -257,9 +254,7 @@ class LogLossLrEtaHook(ClassyHook):
                     rolling_eta_secs = int(
                         rolling_avg_time * (task.max_iteration - iteration)
                     )
-                    rolling_eta_str = str(
-                        datetime.timedelta(seconds=int(rolling_eta_secs))
-                    )
+                    rolling_eta_str = str(datetime.timedelta(seconds=rolling_eta_secs))
                     rolling_btime = int(1000.0 * rolling_avg_time)
                     log_data[f"btime({self.btime_freq}iters)(ms)"] = rolling_btime
                     log_data["rolling_eta"] = rolling_eta_str
@@ -437,12 +432,9 @@ class LogLossMetricsCheckpointHook(ClassyHook):
                         train_phase_idx = train_phase_idx - 1
                         model_state_dict["train_phase_idx"] = train_phase_idx
                     restart_phase = phase_idx - 1
-                    restart_iteration = task.iteration
-
-                # When loading from a phase checkpoint:
                 else:
                     restart_phase = phase_idx
-                    restart_iteration = task.iteration
+                restart_iteration = task.iteration
 
                 checkpoint_content = {
                     "phase_idx": restart_phase,
@@ -480,10 +472,11 @@ class LogLossMetricsCheckpointHook(ClassyHook):
         phase_type = "train" if task.train else "test"
         rank, _ = get_machine_local_and_dist_rank()
         checkpoint_folder = task.checkpoint_folder
-        save_metrics = {}
-        save_metrics["iteration"] = task.iteration
-        save_metrics["phase_idx"] = task.phase_idx
-        save_metrics["train_phase_idx"] = train_phase_idx
+        save_metrics = {
+            "iteration": task.iteration,
+            "phase_idx": task.phase_idx,
+            "train_phase_idx": train_phase_idx,
+        }
         for meter in task.meters:
             if len(task.meters) > 0 and (
                 (task.train and task.config["METERS"]["enable_training_meter"])
@@ -554,15 +547,15 @@ class LogPerfTimeMetricsHook(ClassyHook):
         """
         Compute and log performance metrics.
         """
-        phase_type = task.phase_type
-        batches = len(task.losses)
-
         if self.start_time is None:
             logging.warning("start_time not initialized")
         else:
             # Average batch time calculation
             total_batch_time = time.time() - self.start_time
+            batches = len(task.losses)
+
             average_batch_time = total_batch_time / batches
+            phase_type = task.phase_type
             logging.info(
                 "Average %s batch time (ms) for %d batches: %d"
                 % (phase_type, batches, 1000.0 * average_batch_time)
@@ -573,7 +566,5 @@ class LogPerfTimeMetricsHook(ClassyHook):
             logging.warning('"perf_stats" not set in local_variables')
         elif task.train:
             logging.info(
-                "Train step time breakdown (rank {}):\n{}".format(
-                    get_rank(), task.perf_stats.report_str()
-                )
+                f"Train step time breakdown (rank {get_rank()}):\n{task.perf_stats.report_str()}"
             )

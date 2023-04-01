@@ -88,9 +88,10 @@ class SwAVLoss(ClassyLoss):
             self.swav_criterion.local_queue_length > 0
             and self.swav_criterion.num_iteration >= self.queue_start_iter
         )
-        loss = 0
-        for i, prototypes_scores in enumerate(output[1:]):
-            loss += self.swav_criterion(prototypes_scores, i)
+        loss = sum(
+            self.swav_criterion(prototypes_scores, i)
+            for i, prototypes_scores in enumerate(output[1:])
+        )
         loss /= len(output) - 1
         self.swav_criterion.num_iteration += 1
         if self.swav_criterion.use_queue:
@@ -192,7 +193,7 @@ class SwAVCriterion(nn.Module):
                 # the batch size is small, to increase the number of samples
                 # in sinkhornknopp to make equal repartition possible)
                 if self.use_queue:
-                    queue = getattr(self, "local_queue" + str(head_id))[i].clone()
+                    queue = getattr(self, f"local_queue{head_id}")[i].clone()
                     scores_this_crop = torch.cat((scores_this_crop, queue))
 
                 # Divide by epsilon (which can be seen as a temperature which
@@ -273,11 +274,11 @@ class SwAVCriterion(nn.Module):
                 )
                 scores_output_file = os.path.join(
                     self.output_dir,
-                    "rank" + str(self.dist_rank) + "_scores" + str(i) + ".pth",
+                    f"rank{str(self.dist_rank)}_scores{str(i)}.pth",
                 )
                 assignments_out_file = os.path.join(
                     self.output_dir,
-                    "rank" + str(self.dist_rank) + "_assignments" + str(i) + ".pth",
+                    f"rank{str(self.dist_rank)}_assignments{str(i)}.pth",
                 )
                 with g_pathmgr.open(scores_output_file, "wb") as fwrite:
                     torch.save(scores, fwrite)
@@ -302,10 +303,8 @@ class SwAVCriterion(nn.Module):
         with torch.no_grad():
             for crop_id in range(len(self.crops_for_assign)):
                 for i in range(head.nmb_heads):
-                    scores = getattr(head, "prototypes" + str(i))(
-                        self.local_emb_queue[crop_id]
-                    )
-                    getattr(self, "local_queue" + str(i))[crop_id] = scores
+                    scores = getattr(head, f"prototypes{str(i)}")(self.local_emb_queue[crop_id])
+                    getattr(self, f"local_queue{str(i)}")[crop_id] = scores
 
     def initialize_queue(self):
         for i in range(self.nmb_heads):
@@ -318,7 +317,7 @@ class SwAVCriterion(nn.Module):
                 * 2
                 - 1
             )
-            self.register_buffer("local_queue" + str(i), init_queue)
+            self.register_buffer(f"local_queue{str(i)}", init_queue)
         stdv = 1.0 / math.sqrt(self.embedding_dim / 3)
         init_queue = (
             torch.rand(

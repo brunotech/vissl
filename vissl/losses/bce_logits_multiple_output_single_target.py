@@ -64,10 +64,10 @@ class BCELogitsMultipleOutputSingleTargetLoss(ClassyLoss):
             output = [output]
         assert isinstance(
             output, list
-        ), "Model output should be a list of tensors. Got Type {}".format(type(output))
-        assert torch.is_tensor(target), "Target should be a tensor. Got Type {}".format(
-            type(target)
-        )
+        ), f"Model output should be a list of tensors. Got Type {type(output)}"
+        assert torch.is_tensor(
+            target
+        ), f"Target should be a tensor. Got Type {type(target)}"
 
         loss = 0
         for idx, pred in enumerate(output):

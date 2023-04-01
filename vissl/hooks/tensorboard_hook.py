@@ -42,12 +42,12 @@ class ActivationStatisticsTensorboardWatcher(ActivationStatisticsObserver):
 
     def consume(self, stat: ActivationStatistics):
         self.writer.add_scalar(
-            tag="activations/" + stat.name + "/mean",
+            tag=f"activations/{stat.name}/mean",
             scalar_value=stat.mean,
             global_step=stat.iteration,
         )
         self.writer.add_scalar(
-            tag="activations/" + stat.name + "/spread",
+            tag=f"activations/{stat.name}/spread",
             scalar_value=stat.spread,
             global_step=stat.iteration,
         )
@@ -266,11 +266,7 @@ class SSLTensorboardHook(ClassyHook):
             )
 
             # Batch processing time
-            if len(task.batch_time) > 0:
-                batch_times = task.batch_time
-            else:
-                batch_times = [0]
-
+            batch_times = task.batch_time if len(task.batch_time) > 0 else [0]
             batch_time_avg_s = sum(batch_times) / max(len(batch_times), 1)
             self.tb_writer.add_scalar(
                 tag="Speed/Batch_processing_time_ms",

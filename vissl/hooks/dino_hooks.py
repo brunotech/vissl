@@ -157,39 +157,35 @@ class DINOHook(ClassyHook):
             return
         try:
             for j in range(task.model.heads[0].nmb_heads):
-                w = getattr(
-                    task.model.heads[0], "prototypes" + str(j)
-                ).weight.data.clone()
+                w = getattr(task.model.heads[0], f"prototypes{str(j)}").weight.data.clone()
                 w = nn.functional.normalize(w, dim=1, p=2)
-                getattr(task.model.heads[0], "prototypes" + str(j)).weight.copy_(w)
+                getattr(task.model.heads[0], f"prototypes{str(j)}").weight.copy_(w)
         except AttributeError:
             # TODO (mathildecaron): don't use getattr
             for j in range(task.model.module.heads[0].nmb_heads):
                 w = getattr(
-                    task.model.module.heads[0], "prototypes" + str(j)
+                    task.model.module.heads[0], f"prototypes{str(j)}"
                 ).weight.data.clone()
                 w = nn.functional.normalize(w, dim=1, p=2)
-                getattr(task.model.module.heads[0], "prototypes" + str(j)).weight.copy_(
-                    w
-                )
+                getattr(task.model.module.heads[0], f"prototypes{str(j)}").weight.copy_(w)
         if task.loss.momentum_teacher is not None:
             try:
                 for j in range(task.loss.momentum_teacher.heads[0].nmb_heads):
                     w = getattr(
-                        task.loss.momentum_teacher.heads[0], "prototypes" + str(j)
+                        task.loss.momentum_teacher.heads[0], f"prototypes{str(j)}"
                     ).weight.data.clone()
                     w = nn.functional.normalize(w, dim=1, p=2)
                     getattr(
-                        task.loss.momentum_teacher.heads[0], "prototypes" + str(j)
+                        task.loss.momentum_teacher.heads[0], f"prototypes{str(j)}"
                     ).weight.copy_(w)
             except AttributeError:
                 for j in range(task.loss.momentum_teacher.module.heads[0].nmb_heads):
                     w = getattr(
                         task.loss.momentum_teacher.module.heads[0],
-                        "prototypes" + str(j),
+                        f"prototypes{str(j)}",
                     ).weight.data.clone()
                     w = nn.functional.normalize(w, dim=1, p=2)
                     getattr(
                         task.loss.momentum_teacher.module.heads[0],
-                        "prototypes" + str(j),
+                        f"prototypes{str(j)}",
                     ).weight.copy_(w)

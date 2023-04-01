@@ -16,7 +16,9 @@ def _as_tensor(x: Tuple[int, int]) -> torch.Tensor:
     """
     if torch.jit.is_scripting():
         return torch.as_tensor(x)
-    if isinstance(x, (list, tuple)) and all([isinstance(t, torch.Tensor) for t in x]):
+    if isinstance(x, (list, tuple)) and all(
+        isinstance(t, torch.Tensor) for t in x
+    ):
         return torch.stack(x)
     return torch.as_tensor(x)
 
@@ -75,7 +77,7 @@ class MultiDimensionalTensor(object):
 
     @classmethod
     def from_tensors(cls, tensor_list: List[torch.Tensor]) -> "MultiDimensionalTensor":
-        assert len(tensor_list) > 0
+        assert tensor_list
         assert isinstance(tensor_list, list)
         for t in tensor_list:
             assert isinstance(t, torch.Tensor), type(t)

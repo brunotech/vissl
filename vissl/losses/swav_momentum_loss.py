@@ -91,7 +91,7 @@ class SwAVMomentumLoss(ClassyLoss):
                 * 2
                 - 1
             )
-            self.register_buffer("local_queue" + str(i), init_queue)
+            self.register_buffer(f"local_queue{str(i)}", init_queue)
         stdv = 1.0 / math.sqrt(self.loss_config.embedding_dim / 3)
         init_queue = (
             torch.rand(
@@ -142,7 +142,7 @@ class SwAVMomentumLoss(ClassyLoss):
                         j * bs : (j + 1) * bs
                     ]
                     if self.use_queue:
-                        queue = getattr(self, "local_queue" + str(head_id))[j].clone()
+                        queue = getattr(self, f"local_queue{str(head_id)}")[j].clone()
                         scores_this_crop = torch.cat((scores_this_crop, queue))
                     assignments = torch.exp(
                         scores_this_crop / self.loss_config.epsilon
@@ -151,9 +151,8 @@ class SwAVMomentumLoss(ClassyLoss):
                 idx_crop_pred = np.delete(
                     np.arange(self.loss_config.num_crops), crop_id
                 )
-                subsubloss = 0
-                for p in idx_crop_pred:
-                    subsubloss -= torch.mean(
+                subsubloss = 0 - sum(
+                    torch.mean(
                         torch.sum(
                             assignments
                             * torch.log(
@@ -165,6 +164,8 @@ class SwAVMomentumLoss(ClassyLoss):
                             dim=1,
                         )
                     )
+                    for p in idx_crop_pred
+                )
                 sub_loss += subsubloss / len(idx_crop_pred)
             loss += sub_loss / len(self.loss_config.crops_for_assign)
         loss /= len(output) - 1
@@ -226,7 +227,5 @@ class SwAVMomentumLoss(ClassyLoss):
         with torch.no_grad():
             for i in range(len(self.loss_config.crops_for_assign)):
                 for h in range(head.nmb_heads):
-                    scores = getattr(head, "prototypes" + str(h))(
-                        self.local_emb_queue[i]
-                    )
-                    getattr(self, "local_queue" + str(h))[i] = scores
+                    scores = getattr(head, f"prototypes{str(h)}")(self.local_emb_queue[i])
+                    getattr(self, f"local_queue{str(h)}")[i] = scores

@@ -30,10 +30,7 @@ def get_redirected_url(url: str):
 
     with requests.Session() as session:
         with session.get(url, stream=True, allow_redirects=True) as response:
-            if response.history:
-                return response.url
-            else:
-                return url
+            return response.url if response.history else url
 
 
 def to_google_drive_download_url(view_url: str) -> str:
@@ -69,7 +66,7 @@ def download_google_drive_url(url: str, output_path: str, output_file_name: str)
         with session.get(url, stream=True, allow_redirects=True) as response:
             for k, v in response.cookies.items():
                 if k.startswith("download_warning"):
-                    url = url + "&confirm=" + v
+                    url = f"{url}&confirm={v}"
 
         # Then download the content of the file
         with session.get(url, stream=True, verify=True) as response:
@@ -96,10 +93,7 @@ def _get_google_drive_file_id(url: str) -> Optional[str]:
         return None
 
     match = re.match(r"/file/d/(?P<id>[^/]*)", parts.path)
-    if match is None:
-        return None
-
-    return match.group("id")
+    return None if match is None else match["id"]
 
 
 def _urlretrieve(url: str, filename: str, chunk_size: int = 1024) -> None:
@@ -139,7 +133,7 @@ def download_url(
 
     # check if file is already present locally
     if check_integrity(fpath, md5):
-        print("Using downloaded and verified file: " + fpath)
+        print(f"Using downloaded and verified file: {fpath}")
         return
 
     # expand redirect chain if needed
@@ -152,19 +146,17 @@ def download_url(
 
     # download the file
     try:
-        print("Downloading " + url + " to " + fpath)
+        print(f"Downloading {url} to {fpath}")
         _urlretrieve(url, fpath)
     except (urllib.error.URLError, IOError) as e:  # type: ignore[attr-defined]
-        if url[:5] == "https":
-            url = url.replace("https:", "http:")
-            print(
-                "Failed download. Trying https -> http instead."
-                " Downloading " + url + " to " + fpath
-            )
-            _urlretrieve(url, fpath)
-        else:
+        if url[:5] != "https":
             raise e
 
+        url = url.replace("https:", "http:")
+        print(
+            f"Failed download. Trying https -> http instead. Downloading {url} to {fpath}"
+        )
+        _urlretrieve(url, fpath)
     # check integrity of downloaded file
     if not check_integrity(fpath, md5):
         raise RuntimeError("File not found or corrupted.")
@@ -187,5 +179,5 @@ def download_and_extract_archive(
     download_url(url, download_root, filename, md5)
 
     archive = os.path.join(download_root, filename)
-    print("Extracting {} to {}".format(archive, extract_root))
+    print(f"Extracting {archive} to {extract_root}")
     extract_archive(archive, extract_root, remove_finished)

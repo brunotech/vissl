@@ -40,26 +40,25 @@ class ImgPilMultiCropRandomApply(ClassyTransform):
         self._build_transform(transforms)
 
     def _build_transform(self, transforms: List[Dict[str, Any]]):
-        out_transforms = []
-        for transform_config in transforms:
-            out_transforms.append(build_transform(transform_config))
+        out_transforms = [
+            build_transform(transform_config) for transform_config in transforms
+        ]
         out_transform = pth_transforms.Compose(out_transforms)
 
         self.transforms = []
-        for idx in range(len(self.prob)):
-            self.transforms.append(
-                pth_transforms.RandomApply([out_transform], p=self.prob[idx])
-            )
+        self.transforms.extend(
+            pth_transforms.RandomApply([out_transform], p=self.prob[idx])
+            for idx in range(len(self.prob))
+        )
 
     def __call__(self, image_list: List[Image.Image]):
         assert isinstance(image_list, list), "image_list must be a list"
         assert len(image_list) == len(self.prob)
         assert len(image_list) == len(self.transforms)
 
-        output = []
-        for idx in range(len(image_list)):
-            output.append(self.transforms[idx](image_list[idx]))
-        return output
+        return [
+            self.transforms[idx](image_list[idx]) for idx in range(len(image_list))
+        ]
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "ImgPilMultiCropRandomApply":

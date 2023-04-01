@@ -216,9 +216,10 @@ class LayerwiseMemoryTracker:
             h2 = m.register_forward_hook(self._create_post_forward_hook(name))
             h3 = m.register_backward_hook(self._create_backward_hook(name))
             self._hooks.extend([h1, h2, h3])
-            if isinstance(m, FullyShardedDataParallel):
-                if isinstance(m.process_group, ProcessGroupTracker):
-                    m.process_group.listener = self._handle_process_group_call
+            if isinstance(m, FullyShardedDataParallel) and isinstance(
+                m.process_group, ProcessGroupTracker
+            ):
+                m.process_group.listener = self._handle_process_group_call
         torch.cuda.empty_cache()
 
     def clear_traces(self):
@@ -428,7 +429,7 @@ class LayerwiseMemoryTracker:
             for x in x.shape:
                 p *= x
             return p
-        elif isinstance(xs, tuple) or isinstance(xs, list):
+        elif isinstance(xs, (tuple, list)):
             return sum(cls._get_module_output_size(x) for x in xs)
         return 0
 
@@ -465,7 +466,7 @@ class LayerwiseMemoryTracker:
             x = to_visit.pop()
             if isinstance(x, torch.Tensor):
                 tensors.append(x)
-            elif isinstance(x, tuple) or isinstance(x, list):
+            elif isinstance(x, (tuple, list)):
                 to_visit.extend(module_io_tensors)
         return tensors
 
@@ -533,10 +534,10 @@ def suggest_checkpoint_location(
     for t in traces:
         if t.is_forward:
             name = t.module_name
-            memory = t.event.memory_activations
             if name not in visited:
                 visited.add(name)
                 modules.append(name)
+                memory = t.event.memory_activations
                 allocations.append(memory)
 
     # remove the stem part

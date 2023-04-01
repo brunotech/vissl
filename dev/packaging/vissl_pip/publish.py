@@ -22,8 +22,7 @@ def fs3cmd(args, allow_failure=False):
     Not tested on H1 - this is a guess based on the definition in H2.
     """
     os.environ["FAIR_CLUSTER_NAME"] = os.environ["FAIR_ENV_CLUSTER"].lower()
-    cmd_args = ["/public/apps/fairusers_aws/bin/fs3cmd"] + args
-    return cmd_args
+    return ["/public/apps/fairusers_aws/bin/fs3cmd"] + args
 
 
 def fs3_exists(path):
@@ -39,7 +38,7 @@ def fs3_exists(path):
 def get_html_wrappers():
     output_wrapper = output / "download.html"
     assert not output_wrapper.exists()
-    dest_wrapper = dest + "download.html"
+    dest_wrapper = f"{dest}download.html"
     if fs3_exists(dest_wrapper):
         fs3cmd(["get", dest_wrapper, str(output_wrapper)])
 

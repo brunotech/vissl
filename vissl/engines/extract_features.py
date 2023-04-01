@@ -100,7 +100,7 @@ def extract_main(
     # print the training settings and system settings
     if local_rank == 0:
         print_cfg(cfg)
-        logging.info("System config:\n{}".format(collect_env_info()))
+        logging.info(f"System config:\n{collect_env_info()}")
 
     trainer = SelfSupervisionTrainer(cfg, dist_run_id)
     trainer.extract(output_folder=cfg.EXTRACT_FEATURES.OUTPUT_DIR or checkpoint_folder)

@@ -36,7 +36,6 @@ class TestBuildMeters(unittest.TestCase):
             build_meter(config)
 
     def test_multi_update(self):
-        meters = []
         configs = [
             {
                 "name": "accuracy_list_meter",
@@ -57,9 +56,7 @@ class TestBuildMeters(unittest.TestCase):
                 "meter_names": [],
             },
         ]
-        for config in configs:
-            meters.append(build_meter(config))
-
+        meters = [build_meter(config) for config in configs]
         # One-hot encoding, 1 = positive for class
         # sample-1: 1, sample-2: 0, sample-3: 0,1,2
         target = torch.tensor([[0, 1, 0], [1, 0, 0], [1, 1, 1]])
@@ -71,7 +68,7 @@ class TestBuildMeters(unittest.TestCase):
             model_output = torch.rand((3, 3)).softmax(dim=1).cpu()
 
             for i, meter in enumerate(meters):
-                if i in prev_values.keys():
+                if i in prev_values:
                     assert str(meter.value) == prev_values[i]
                 meter.update(model_output, target.cpu())
                 prev_values[i] = str(meter.value)

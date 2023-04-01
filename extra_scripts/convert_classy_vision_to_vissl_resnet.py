@@ -82,7 +82,7 @@ def main():
 
     converted_trunk = convert_classy_trunk_to_vissl_model(state_dict, args.depth)
     output_state_dict = {"model_state_dict": converted_trunk}
-    logger.info("Saving converted weights to: {}".format(args.output_model))
+    logger.info(f"Saving converted weights to: {args.output_model}")
     torch.save(output_state_dict, args.output_model)
     logger.info("Done!!")
 

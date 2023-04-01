@@ -29,10 +29,11 @@ def get_slurm_dir(input_dir: str):
     input directory. This could be used to store any training artifacts
     specific to this training run.
     """
-    output_dir = input_dir
-    if "SLURM_JOBID" in os.environ:
-        output_dir = f"{input_dir}/{os.environ['SLURM_JOBID']}"
-    return output_dir
+    return (
+        f"{input_dir}/{os.environ['SLURM_JOBID']}"
+        if "SLURM_JOBID" in os.environ
+        else input_dir
+    )
 
 
 def is_submitit_available() -> bool:

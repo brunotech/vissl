@@ -416,7 +416,7 @@ class XCiT(nn.Module):
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
         self.pos_drop = nn.Dropout(p=drop_rate)
 
-        dpr = [drop_path_rate for i in range(depth)]
+        dpr = [drop_path_rate for _ in range(depth)]
         self.blocks = nn.ModuleList(
             [
                 XCABlock(
@@ -451,7 +451,7 @@ class XCiT(nn.Module):
                     eta=eta,
                     tokens_norm=tokens_norm,
                 )
-                for i in range(cls_attn_layers)
+                for _ in range(cls_attn_layers)
             ]
         )
         self.norm = norm_layer(embed_dim)

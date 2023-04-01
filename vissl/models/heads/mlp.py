@@ -108,8 +108,7 @@ class MLP(nn.Module):
                 d == 1 for d in batch.shape[2:]
             ), f"MLP expected 2D input tensor or 4D tensor of shape NxCx1x1. got: {batch.shape}"
             batch = batch.reshape((batch.size(0), batch.size(1)))
-        out = self.clf(batch)
-        return out
+        return self.clf(batch)
 
 
 @register_model_head("mlp_fsdp")

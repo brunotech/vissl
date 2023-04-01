@@ -471,22 +471,21 @@ def get_eval_dataset(cfg, root_dataset_path, eval_dataset_name, eval_binary_path
     )
 
     if is_revisited_dataset(eval_dataset_name):
-        eval_dataset = RevisitedInstanceRetrievalDataset(
+        return RevisitedInstanceRetrievalDataset(
             eval_dataset_name, root_dataset_path, num_samples=num_samples
         )
     elif is_instre_dataset(eval_dataset_name):
-        eval_dataset = InstreDataset(eval_data_path, num_samples=num_samples)
+        return InstreDataset(eval_data_path, num_samples=num_samples)
     elif is_copdays_dataset(eval_dataset_name):
-        eval_dataset = CopyDaysDataset(
+        return CopyDaysDataset(
             data_path=eval_data_path,
             num_samples=num_samples,
             use_distractors=cfg.IMG_RETRIEVAL.USE_DISTRACTORS,
         )
     else:
-        eval_dataset = InstanceRetrievalDataset(
+        return InstanceRetrievalDataset(
             eval_data_path, eval_binary_path, num_samples=num_samples
         )
-    return eval_dataset
 
 
 def instance_retrieval_test(args, cfg):

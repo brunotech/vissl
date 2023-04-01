@@ -78,9 +78,7 @@ def create_oxford_pets_split(images_path: str, annotations_path: str, output_pat
             image_label = extract_label(image_name)
             label_path = os.path.join(output_path, image_label)
             os.makedirs(label_path, exist_ok=True)
-            shutil.copy(
-                src=os.path.join(images_path, image_name + ".jpg"), dst=label_path
-            )
+            shutil.copy(src=os.path.join(images_path, f"{image_name}.jpg"), dst=label_path)
 
 
 def cleanup_unused_files(output_path: str):

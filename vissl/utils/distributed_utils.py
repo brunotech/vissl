@@ -51,8 +51,7 @@ def gather_from_all(tensor: torch.Tensor) -> torch.Tensor:
         ]
     else:
         gathered_tensors = [tensor]
-    gathered_tensor = torch.cat(gathered_tensors, 0)
-    return gathered_tensor
+    return torch.cat(gathered_tensors, 0)
 
 
 def all_gather_sizes(x: torch.Tensor) -> List[int]:

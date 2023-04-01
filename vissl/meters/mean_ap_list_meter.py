@@ -59,14 +59,11 @@ class MeanAPListMeter(ClassyMeter):
         Value of the meter globally synced. For each output, mean AP and AP for each class is
         returned.
         """
-        val_dict = {}
-        for ind, meter in enumerate(self._meters):
-            meter_val = meter.value
-            sample_count = meter._scores.shape[0]
-            val_dict[ind] = {"val": meter_val, "sample_count": sample_count}
-        output_dict = {}
-        output_dict["mAP"] = {}
-        output_dict["AP"] = {}
+        val_dict = {
+            ind: {"val": meter.value, "sample_count": meter._scores.shape[0]}
+            for ind, meter in enumerate(self._meters)
+        }
+        output_dict = {"mAP": {}, "AP": {}}
         for ind in range(len(self._meters)):
             meter_name = self._meter_names[ind] if (len(self._meter_names) > 0) else ind
             val = 100.0 * round(float(val_dict[ind]["val"]["mAP"]), 6)
@@ -88,7 +85,7 @@ class MeanAPListMeter(ClassyMeter):
         """
         Globally syncing the state of each meter across all the trainers.
         """
-        for _, meter in enumerate(self._meters):
+        for meter in self._meters:
             meter.sync_state()
 
     def get_classy_state(self):

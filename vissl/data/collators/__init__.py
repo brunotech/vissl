@@ -58,9 +58,8 @@ def get_collator(collator_name, collate_params):
     """
     if collator_name == "default_collate":
         return default_collate
-    else:
-        assert collator_name in COLLATOR_REGISTRY, "Unknown collator"
-        return partial(COLLATOR_REGISTRY[collator_name], **collate_params)
+    assert collator_name in COLLATOR_REGISTRY, "Unknown collator"
+    return partial(COLLATOR_REGISTRY[collator_name], **collate_params)
 
 
 # automatically import any Python files in the collators/ directory

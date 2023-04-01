@@ -24,7 +24,7 @@ class InitMemoryHook(ClassyHook):
         """
         At the begining of the training, initialize the memory banks
         """
-        if not task.config["LOSS"]["name"] == "deepclusterv2_loss":
+        if task.config["LOSS"]["name"] != "deepclusterv2_loss":
             return
         if task.train_phase_idx >= 0:
             return
@@ -51,6 +51,6 @@ class ClusterMemoryHook(ClassyHook):
         At the beginning of each epochs, cluster the memory banks with
         distributed k-means
         """
-        if not task.config["LOSS"]["name"] == "deepclusterv2_loss":
+        if task.config["LOSS"]["name"] != "deepclusterv2_loss":
             return
         task.loss.cluster_memory()

@@ -103,9 +103,9 @@ class MultiCropSimclrInfoNCECriterion(SimclrInfoNCECriterion):
             pos_temps.append(np.hstack(pos_temp))
             neg_temp = np.hstack(neg_temp)
 
-        pos_mask = []
-        for i in range(self.num_crops - 1):
-            pos_mask.append(torch.from_numpy(pos_temps[1 + i]))
+        pos_mask = [
+            torch.from_numpy(pos_temps[1 + i]) for i in range(self.num_crops - 1)
+        ]
         neg_mask = torch.from_numpy(neg_temp - sum(pos_temps))
 
         if self.use_gpu:
@@ -138,7 +138,7 @@ class MultiCropSimclrInfoNCECriterion(SimclrInfoNCECriterion):
         for loss_id in range(len(self.pos_mask)):
             pos = torch.sum(similarity * self.pos_mask[loss_id], 1)
             neg = torch.sum(similarity * self.neg_mask, 1)
-            idx = (1 - torch.sum(self.pos_mask[loss_id], 1) > 0).detach()
+            idx = (torch.sum(self.pos_mask[loss_id], 1) < 1).detach()
             term_prob = pos / (pos + neg)
             term_prob[idx] = 1.0
             term_loss = torch.log(term_prob)

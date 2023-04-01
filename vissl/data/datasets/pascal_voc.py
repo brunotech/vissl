@@ -31,16 +31,16 @@ def validate_files(input_files):
     The valid files will have name: <class_name>_<split>.txt. We want to remove
     all the other files from the input.
     """
-    output_files = []
-    for item in input_files:
-        if len(item.split("/")[-1].split("_")) == 2:
-            output_files.append(item)
-    return output_files
+    return [
+        item
+        for item in input_files
+        if len(item.split("/")[-1].split("_")) == 2
+    ]
 
 
 def get_data_files(split, data_source_dir):
     data_dir = f"{data_source_dir}/ImageSets/Main"
-    assert g_pathmgr.exists(data_dir), "Data: {} doesn't exist".format(data_dir)
+    assert g_pathmgr.exists(data_dir), f"Data: {data_dir} doesn't exist"
     test_data_files = glob(os.path.join(data_dir, "*_test.txt"))
     test_data_files = validate_files(test_data_files)
     train_data_files = glob(os.path.join(data_dir, "*_trainval.txt"))
@@ -81,9 +81,7 @@ def get_voc_images_labels_info(split, data_source_dir):
                         orig_label = -1
                     img_labels_map[img_name][cls_num] = orig_label
                 except Exception:
-                    logging.info(
-                        "Error processing: {} data_path: {}".format(line, data_path)
-                    )
+                    logging.info(f"Error processing: {line} data_path: {data_path}")
     img_paths, img_labels = [], []
     for item in sorted(img_labels_map.keys()):
         img_paths.append(f"{data_source_dir}/JPEGImages/{item}.jpg")

@@ -35,9 +35,7 @@ class FeatureExtractorModel(nn.Module):
         feats = self.base_model(batch, out_feat_keys)
         assert len(feats) == len(
             self.feature_pool_ops
-        ), "#features returned by base model ({}) != #Pooling Ops ({})".format(
-            len(feats), len(self.feature_pool_ops)
-        )
+        ), f"#features returned by base model ({len(feats)}) != #Pooling Ops ({len(self.feature_pool_ops)})"
         out = []
         for feat, op in zip(feats, self.feature_pool_ops):
             feat = op(feat)
@@ -58,8 +56,7 @@ class FeatureExtractorModel(nn.Module):
         ) in self.model_config.FEATURE_EVAL_SETTINGS.LINEAR_EVAL_FEAT_POOL_OPS_MAP:
             pool_ops, args = item[1]
             feat_pool_ops.append(POOL_OPS[pool_ops](*args))
-        feat_pool = nn.ModuleList(feat_pool_ops)
-        return feat_pool
+        return nn.ModuleList(feat_pool_ops)
 
     def train(self, mode=True):
         self.training = mode

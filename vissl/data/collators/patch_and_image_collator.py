@@ -38,11 +38,9 @@ def patch_and_image_collator(batch):
         patch_list.extend(data[idx][1:])
     patches = torch.stack(patch_list)
 
-    output_batch = {
+    return {
         "images": [images],
         "patches": [patches],
         "label": [labels],
         "data_valid": [data_valid],
     }
-
-    return output_batch

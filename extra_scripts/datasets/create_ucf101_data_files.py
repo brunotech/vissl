@@ -111,10 +111,14 @@ class _ExtractMiddleFrameDataset:
         with av.open(file_path) as container:
             nb_frames = container.streams.video[0].frames
             vid_stream = container.streams.video[0]
-            for i, frame in enumerate(container.decode(vid_stream)):
-                if i - 1 == nb_frames // 2:
-                    return frame.to_image()
-            return None
+            return next(
+                (
+                    frame.to_image()
+                    for i, frame in enumerate(container.decode(vid_stream))
+                    if i - 1 == nb_frames // 2
+                ),
+                None,
+            )
 
     def __len__(self):
         return len(self.split_info)
@@ -123,7 +127,7 @@ class _ExtractMiddleFrameDataset:
         category, video_name = self.split_info[idx]
         video_path = os.path.join(self.data_path, category, video_name)
         mid_frame = self._extract_middle_frame(video_path)
-        image_name = os.path.splitext(video_name)[0] + ".jpg"
+        image_name = f"{os.path.splitext(video_name)[0]}.jpg"
         return mid_frame, image_name, category
 
 

@@ -39,7 +39,7 @@ def get_images_labels_info(split, args):
     assert g_pathmgr.exists(args.data_source_dir), "Data source NOT found. Abort!"
     data_dir = f"{args.data_source_dir}/{split}"
     class_idx = get_all_classes(data_dir)
-    logger.info("Number of classes in {} data: {}".format(split, len(class_idx)))
+    logger.info(f"Number of classes in {split} data: {len(class_idx)}")
     all_classes = class_idx.keys()
     image_paths, image_classes, img_ids = [], [], []
     for class_name in all_classes:
@@ -105,7 +105,7 @@ def main():
 
             with g_pathmgr.open(json_out_path, "w") as fp:
                 json.dump(output_dict, fp)
-            logger.info("Saved Json to: {}".format(json_out_path))
+            logger.info(f"Saved Json to: {json_out_path}")
     logger.info("DONE!")
 
 

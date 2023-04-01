@@ -99,7 +99,7 @@ class RandAugment(ClassyTransform):
         **kwargs
     ):
         hparams = kwargs
-        hparams.update(_HPARAMS_DEFAULT)
+        hparams |= _HPARAMS_DEFAULT
         hparams["magnitude_std"] = magnitude_std
         if increasing_severity:
             transforms = _RAND_INCREASING_TRANSFORMS
@@ -145,7 +145,7 @@ class AutoAugment(ClassyTransform):
 
     def __init__(self, policy_name="v0", magnitude_std=0, **kwargs):
         hparams = kwargs
-        hparams.update(_HPARAMS_DEFAULT)
+        hparams |= _HPARAMS_DEFAULT
         hparams["magnitude_std"] = magnitude_std
         self.policy = auto_augment_policy(policy_name, hparams=hparams)
 
@@ -261,18 +261,15 @@ def solarize_add(img, add, thresh=128, **__):
             lut.append(min(255, i + add))
         else:
             lut.append(i)
-    if img.mode in ("L", "RGB"):
-        if img.mode == "RGB" and len(lut) == 256:
-            lut = lut + lut + lut
-        return img.point(lut)
-    else:
+    if img.mode not in ("L", "RGB"):
         return img
+    if img.mode == "RGB" and len(lut) == 256:
+        lut = lut + lut + lut
+    return img.point(lut)
 
 
 def posterize(img, bits_to_keep, **__):
-    if bits_to_keep >= 8:
-        return img
-    return ImageOps.posterize(img, bits_to_keep)
+    return img if bits_to_keep >= 8 else ImageOps.posterize(img, bits_to_keep)
 
 
 def contrast(img, factor, **__):
@@ -499,8 +496,7 @@ def auto_augment_policy_v0(hparams):
         [("Solarize", 0.6, 8), ("Equalize", 0.6, 1)],
         [("Color", 0.8, 6), ("Rotate", 0.4, 5)],
     ]
-    pc = [[AugmentOp(*a, hparams=hparams) for a in sp] for sp in policy]
-    return pc
+    return [[AugmentOp(*a, hparams=hparams) for a in sp] for sp in policy]
 
 
 def auto_augment_policy_v0r(hparams):
@@ -533,8 +529,7 @@ def auto_augment_policy_v0r(hparams):
         [("Solarize", 0.6, 8), ("Equalize", 0.6, 1)],
         [("Color", 0.8, 6), ("Rotate", 0.4, 5)],
     ]
-    pc = [[AugmentOp(*a, hparams=hparams) for a in sp] for sp in policy]
-    return pc
+    return [[AugmentOp(*a, hparams=hparams) for a in sp] for sp in policy]
 
 
 def auto_augment_policy_original(hparams):
@@ -566,8 +561,7 @@ def auto_augment_policy_original(hparams):
         [("Color", 0.6, 4), ("Contrast", 1.0, 8)],
         [("Equalize", 0.8, 8), ("Equalize", 0.6, 3)],
     ]
-    pc = [[AugmentOp(*a, hparams=hparams) for a in sp] for sp in policy]
-    return pc
+    return [[AugmentOp(*a, hparams=hparams) for a in sp] for sp in policy]
 
 
 def auto_augment_policy_originalr(hparams):
@@ -599,8 +593,7 @@ def auto_augment_policy_originalr(hparams):
         [("Color", 0.6, 4), ("Contrast", 1.0, 8)],
         [("Equalize", 0.8, 8), ("Equalize", 0.6, 3)],
     ]
-    pc = [[AugmentOp(*a, hparams=hparams) for a in sp] for sp in policy]
-    return pc
+    return [[AugmentOp(*a, hparams=hparams) for a in sp] for sp in policy]
 
 
 def auto_augment_policy(name="v0", hparams=None):
@@ -614,7 +607,7 @@ def auto_augment_policy(name="v0", hparams=None):
     elif name == "v0r":
         return auto_augment_policy_v0r(hparams)
     else:
-        assert AssertionError, "Unknown AA policy (%s)" % name
+        assert AssertionError, f"Unknown AA policy ({name})"
 
 
 def auto_augment_transform(config_str, hparams):

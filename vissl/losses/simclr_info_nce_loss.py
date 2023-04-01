@@ -55,8 +55,7 @@ class SimclrInfoNCELoss(ClassyLoss):
 
     def forward(self, output, target):
         normalized_output = nn.functional.normalize(output, dim=1, p=2)
-        loss = self.info_criterion(normalized_output)
-        return loss
+        return self.info_criterion(normalized_output)
 
     def __repr__(self):
         repr_dict = {"name": self._get_name(), "info_average": self.info_criterion}
@@ -143,8 +142,7 @@ class SimclrInfoNCECriterion(nn.Module):
         similarity = torch.exp(torch.mm(embedding, embeddings_buffer.t()) / T)
         pos = torch.sum(similarity * self.pos_mask, 1)
         neg = torch.sum(similarity * self.neg_mask, 1)
-        loss = -(torch.mean(torch.log(pos / (pos + neg))))
-        return loss
+        return -(torch.mean(torch.log(pos / (pos + neg))))
 
     def __repr__(self):
         num_negatives = self.buffer_params.effective_batch_size - 2
@@ -165,8 +163,9 @@ class SimclrInfoNCECriterion(nn.Module):
         Do a gather over all embeddings, so we can compute the loss.
         Final shape is like: (batch_size * num_gpus) x embedding_dim
         """
-        if torch.distributed.is_available() and torch.distributed.is_initialized():
-            embedding_gathered = gather_from_all(embedding)
-        else:
-            embedding_gathered = embedding
-        return embedding_gathered
+        return (
+            gather_from_all(embedding)
+            if torch.distributed.is_available()
+            and torch.distributed.is_initialized()
+            else embedding
+        )

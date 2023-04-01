@@ -24,11 +24,12 @@ def list_config_files(dir_path, exclude_folders):
     config_files = []
 
     def valid_file(filename):
-        if not filename.endswith("yaml"):
-            return False
-        if exclude_folders and any(x in filename for x in exclude_folders):
-            return False
-        return True
+        return (
+            not exclude_folders
+            or all(x not in filename for x in exclude_folders)
+            if filename.endswith("yaml")
+            else False
+        )
 
     for item in all_items:
         subpath = f"{dir_path}/{item}"
@@ -42,10 +43,7 @@ def list_config_files(dir_path, exclude_folders):
 
 
 def create_valid_input(input_list):
-    out_list = []
-    for item in input_list:
-        out_list.append(re.sub("config/", "config=", item))
-    return out_list
+    return [re.sub("config/", "config=", item) for item in input_list]
 
 
 # we skip object detection configs since they are for detectron2 codebase
@@ -98,7 +96,7 @@ UNIT_TEST_CONFIGS = create_valid_input(
 class SSLHydraConfig(object):
     def __init__(self, overrides: List[Any] = None):
         self.overrides = []
-        if overrides is not None and len(overrides) > 0:
+        if overrides is not None and overrides:
             self.overrides.extend(overrides)
         cfg = compose_hydra_configuration(self.overrides)
         self.default_cfg = cfg

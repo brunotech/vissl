@@ -183,10 +183,7 @@ class GPSA(nn.Module):
             "nm,hnm->h", (distances, attn_map)
         ).mean()  # average over heads
         dist = dist.item() / distances.size(0)
-        if return_map:
-            return dist, attn_map
-        else:
-            return dist
+        return (dist, attn_map) if return_map else dist
 
     def init_local(self, locality_strength=1.0):
         """
@@ -201,10 +198,7 @@ class GPSA(nn.Module):
         locality_distance = 1
 
         kernel_size = int(self.num_heads ** 0.5)
-        if kernel_size % 2 == 0:
-            center = (kernel_size - 1) / 2
-        else:
-            center = kernel_size // 2
+        center = (kernel_size - 1) / 2 if kernel_size % 2 == 0 else kernel_size // 2
         for h1 in range(kernel_size):
             for h2 in range(kernel_size):
                 position = h1 + kernel_size * h2
@@ -290,10 +284,7 @@ class SelfAttention(nn.Module):
 
         dist = torch.einsum("nm,hnm->h", (distances, attn_map)).mean()
         dist = dist.item() / N
-        if return_map:
-            return dist, attn_map
-        else:
-            return dist
+        return (dist, attn_map) if return_map else dist
 
     def forward(self, x):
         B, N, C = x.shape
@@ -589,11 +580,7 @@ class ConViT(nn.Module):
 
         x = self.norm(x)
 
-        if self.classifier == "token":
-            # just return the output for the class token
-            x = x[:, 0, :]
-        else:
-            x = x.mean(dim=1)
+        x = x[:, 0, :] if self.classifier == "token" else x.mean(dim=1)
         return x
 
     def forward(self, x, out_feat_keys):
@@ -621,48 +608,45 @@ class ConViT(nn.Module):
             )
         new_seq_length = self.seq_length
 
-        if new_seq_length != seq_length:
-            # need to interpolate the weights for the position embedding
-            # we do this by reshaping the positions embeddings to a 2d grid,
-            # performing an interpolation in the (h, w) space and then
-            # reshaping back to a 1d grid
-
-            # (seq_length, 1, hidden_dim) -> (1, hidden_dim, seq_length)
-            pos_embedding = pos_embedding.permute(0, 2, 1)
-            seq_length_1d = int(math.sqrt(seq_length))
-            assert (
-                seq_length_1d * seq_length_1d == seq_length
-            ), "seq_length is not a perfect square"
-
-            logging.info(
-                "Interpolating the position embeddings from image "
-                f"{seq_length_1d * self.patch_size} to size"
-                f" {self.image_size}"
-            )
-
-            # (1, hidden_dim, seq_length) -> (1, hidden_dim, seq_l_1d, seq_l_1d)
-            pos_embedding = pos_embedding.reshape(
-                1, hidden_dim, seq_length_1d, seq_length_1d
-            )
-            new_seq_length_1d = self.image_size // self.patch_size
-
-            # use bicubic interpolation - it gives significantly better
-            # results in the test `test_resolution_change`
-            new_pos_embedding = torch.nn.functional.interpolate(
-                pos_embedding,
-                size=new_seq_length_1d,
-                mode="bicubic",
-                align_corners=True,
-            )
-
-            # (1, hidden_dim, new_seq_l_1d, new_seq_l_1d) ->
-            # (1, hidden_dim, new_seq_l)
-            new_pos_embedding = new_pos_embedding.reshape(1, hidden_dim, new_seq_length)
-            # (1, hidden_dim, new_seq_length) -> (new_seq_length, 1, hidden_dim)
-            new_pos_embedding = new_pos_embedding.permute(0, 2, 1)
-            return new_pos_embedding
-        else:
+        if new_seq_length == seq_length:
             return pos_embedding
+        # need to interpolate the weights for the position embedding
+        # we do this by reshaping the positions embeddings to a 2d grid,
+        # performing an interpolation in the (h, w) space and then
+        # reshaping back to a 1d grid
+
+        # (seq_length, 1, hidden_dim) -> (1, hidden_dim, seq_length)
+        pos_embedding = pos_embedding.permute(0, 2, 1)
+        seq_length_1d = int(math.sqrt(seq_length))
+        assert seq_length_1d**2 == seq_length, "seq_length is not a perfect square"
+
+        logging.info(
+            "Interpolating the position embeddings from image "
+            f"{seq_length_1d * self.patch_size} to size"
+            f" {self.image_size}"
+        )
+
+        # (1, hidden_dim, seq_length) -> (1, hidden_dim, seq_l_1d, seq_l_1d)
+        pos_embedding = pos_embedding.reshape(
+            1, hidden_dim, seq_length_1d, seq_length_1d
+        )
+        new_seq_length_1d = self.image_size // self.patch_size
+
+        # use bicubic interpolation - it gives significantly better
+        # results in the test `test_resolution_change`
+        new_pos_embedding = torch.nn.functional.interpolate(
+            pos_embedding,
+            size=new_seq_length_1d,
+            mode="bicubic",
+            align_corners=True,
+        )
+
+        # (1, hidden_dim, new_seq_l_1d, new_seq_l_1d) ->
+        # (1, hidden_dim, new_seq_l)
+        new_pos_embedding = new_pos_embedding.reshape(1, hidden_dim, new_seq_length)
+        # (1, hidden_dim, new_seq_length) -> (new_seq_length, 1, hidden_dim)
+        new_pos_embedding = new_pos_embedding.permute(0, 2, 1)
+        return new_pos_embedding
 
     def interpolate_pos_embedding_to_data(self, x, pos_embed):
         """

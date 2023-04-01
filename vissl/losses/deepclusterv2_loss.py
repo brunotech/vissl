@@ -74,9 +74,7 @@ class DeepClusterV2Loss(ClassyLoss):
             "assignments", -100 * torch.ones(self.nmb_heads, size_dataset).long()
         )
         for i, k in enumerate(self.loss_config.num_clusters):
-            self.register_buffer(
-                "centroids" + str(i), torch.rand(k, self.embedding_dim)
-            )
+            self.register_buffer(f"centroids{str(i)}", torch.rand(k, self.embedding_dim))
 
         self.cross_entropy_loss = nn.CrossEntropyLoss(ignore_index=-100)
 
@@ -99,7 +97,7 @@ class DeepClusterV2Loss(ClassyLoss):
         loss = 0
         for i in range(self.nmb_heads):
             scores = (
-                torch.mm(output, getattr(self, "centroids" + str(i)).t())
+                torch.mm(output, getattr(self, f"centroids{str(i)}").t())
                 / self.temperature
             )
             loss += self.cross_entropy_loss(scores, self.assignments[i][idx])
@@ -195,7 +193,7 @@ class DeepClusterV2Loss(ClassyLoss):
                     # normalize centroids
                     centroids = nn.functional.normalize(centroids, dim=1, p=2)
 
-                getattr(self, "centroids" + str(i_K)).copy_(centroids)
+                getattr(self, f"centroids{str(i_K)}").copy_(centroids)
                 # gather the assignments
                 assignments_all = gather_from_all(assignments)
                 indexes_all = gather_from_all(self.local_memory_index)

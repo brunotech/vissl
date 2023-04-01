@@ -136,7 +136,7 @@ class KineticsMiddleFrameDataset:
         label = self.video_labels[idx]
         mid_frame = self._extract_middle_frame(video_path)
         video_name = os.path.split(video_path)[1]
-        image_name = os.path.splitext(video_name)[0] + ".jpg"
+        image_name = f"{os.path.splitext(video_name)[0]}.jpg"
         return mid_frame, image_name, label, video_path
 
 

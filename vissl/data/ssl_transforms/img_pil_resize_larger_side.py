@@ -25,16 +25,13 @@ class ImgPilResizeLargerSide(ClassyTransform):
         self.size = size
 
     def __call__(self, img):
-        # Resize the longest side to self.size.
-        if self.resize_long:
-            img_size_hw = np.array((img.size[1], img.size[0]))
-            ratio = float(self.size) / np.max(img_size_hw)
-            new_size = tuple(np.round(img_size_hw * ratio).astype(np.int32))
-            img_resized = img.resize((new_size[1], new_size[0]), Image.BILINEAR)
-        else:
-            img_resized = self.transforms(img)
+        if not self.resize_long:
+            return self.transforms(img)
 
-        return img_resized
+        img_size_hw = np.array((img.size[1], img.size[0]))
+        ratio = float(self.size) / np.max(img_size_hw)
+        new_size = tuple(np.round(img_size_hw * ratio).astype(np.int32))
+        return img.resize((new_size[1], new_size[0]), Image.BILINEAR)
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "ImgPilResizeLargerSide":

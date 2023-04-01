@@ -64,7 +64,7 @@ class Food101:
         self.split = split
         self.class_file = os.path.join(self.input_path, self.META_FOLDER, "classes.txt")
         self.split_path = os.path.join(
-            self.input_path, self.META_FOLDER, split.lower() + ".txt"
+            self.input_path, self.META_FOLDER, f"{split.lower()}.txt"
         )
         self.IMAGE_FOLDER = os.path.join(self.input_path, self.IMAGE_FOLDER)
         with open(self.class_file, "r") as f:

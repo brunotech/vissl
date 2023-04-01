@@ -100,8 +100,7 @@ class TestModelHelpers(unittest.TestCase):
                 assert torch.allclose(
                     running_mean, torch.full(size=(8,), fill_value=0.1)
                 )
-        else:
-            if gpu_id in {0, 1}:
-                assert torch.allclose(
-                    running_mean, torch.full(size=(8,), fill_value=0.05)
-                )
+        elif gpu_id in {0, 1}:
+            assert torch.allclose(
+                running_mean, torch.full(size=(8,), fill_value=0.05)
+            )

@@ -31,7 +31,7 @@ def is_oxford_paris_dataset(dataset_name: str):
     the oxford and paris datasets. simply looks for pattern "roxford5k"
     and "rparis6k" in specified dataset_name.
     """
-    return dataset_name in ["Oxford", "Paris"]
+    return dataset_name in {"Oxford", "Paris"}
 
 
 def is_revisited_dataset(dataset_name: str):
@@ -40,7 +40,7 @@ def is_revisited_dataset(dataset_name: str):
     the oxford and paris datasets. simply looks for pattern "roxford5k"
     and "rparis6k" in specified dataset_name.
     """
-    return dataset_name in ["roxford5k", "rparis6k"]
+    return dataset_name in {"roxford5k", "rparis6k"}
 
 
 def is_instre_dataset(dataset_name: str):
@@ -63,7 +63,7 @@ def is_copdays_dataset(dataset_name: str):
     """
     Is the dataset copydays.
     """
-    return dataset_name in ["copydays"]
+    return dataset_name in {"copydays"}
 
 
 # pooling + whitening
@@ -147,7 +147,7 @@ def gem(
     Returns:
         x (torch.Tensor): Gem pooled tensor
     """
-    if p == math.inf or p == "inf":
+    if p in [math.inf, "inf"]:
         x = F.max_pool2d(x, (x.size(-2), x.size(-1)))
     elif p == 1 and not (torch.is_tensor(p) and p.requires_grad):
         x = F.avg_pool2d(x, (x.size(-2), x.size(-1)))
@@ -197,8 +197,7 @@ class MultigrainResize(transforms.Resize):
             w, h = size, int(size * h / w)
         else:
             w, h = int(size * w / h), size
-        size = (h, w)
-        return size
+        return h, w
 
     def __call__(self, img):
         size = self.size
@@ -208,7 +207,7 @@ class MultigrainResize(transforms.Resize):
 
     def __repr__(self):
         r = super().__repr__()
-        return r[:-1] + f", largest={self.largest})"
+        return f"{r[:-1]}, largest={self.largest})"
 
 
 # Credits: Matthijs Douze
@@ -414,8 +413,7 @@ class RevisitedInstanceRetrievalDataset:
         # search for easy
         gnd_t = []
         for i in range(len(gnd)):
-            g = {}
-            g["ok"] = np.concatenate([gnd[i]["easy"]])
+            g = {"ok": np.concatenate([gnd[i]["easy"]])}
             g["junk"] = np.concatenate([gnd[i]["junk"], gnd[i]["hard"]])
             gnd_t.append(g)
 
@@ -487,10 +485,7 @@ class InstanceRetrievalImageLoader:
         if self.S == -1:
             ratio = 1.0
         elif self.S == -2:
-            if np.max(im_size_hw) > 124:
-                ratio = 1024.0 / np.max(im_size_hw)
-            else:
-                ratio = -1
+            ratio = 1024.0 / np.max(im_size_hw) if np.max(im_size_hw) > 124 else -1
         else:
             ratio = float(self.S) / np.max(im_size_hw)
         new_size = tuple(np.round(im_size_hw * ratio).astype(np.int32))
@@ -748,10 +743,7 @@ class InstanceRetrievalDataset:
                 q_name = e[: -len("_query.txt")]
                 with g_pathmgr.open(f"{self.lab_root}/{e}") as fopen:
                     q_data = fopen.readline().split(" ")
-                if q_data[0].startswith("oxc1_"):
-                    q_filename = q_data[0][5:]
-                else:
-                    q_filename = q_data[0]
+                q_filename = q_data[0][5:] if q_data[0].startswith("oxc1_") else q_data[0]
                 self.filename_to_name[q_filename] = q_name
                 self.name_to_filename[q_name] = q_filename
                 with g_pathmgr.open(f"{self.lab_root}/{q_name}_ok.txt") as fopen:
@@ -942,21 +934,20 @@ class CopyDaysDataset:
         # Map at rank K
         ks = [1, 5, 10]
 
-        query_filenames = self.query_filenames[0 : sim.shape[0]]
-        database_filenames = self.database_filenames[0 : sim.shape[1]]
+        query_filenames = self.query_filenames[:sim.shape[0]]
+        database_filenames = self.database_filenames[:sim.shape[1]]
 
         # Calculate map for each query split
         results = {}
         for query_split in self.query_splits:
 
-            # Get indeces of split queries.
-            query_indeces = []
-            for i, query_split_filename in enumerate(query_filenames):
-                if query_split in query_split_filename:
-                    query_indeces.append(i)
-
+            query_indeces = [
+                i
+                for i, query_split_filename in enumerate(query_filenames)
+                if query_split in query_split_filename
+            ]
             # No queries for this split. Used for DEBUG_MODE when imposing data limit.
-            if len(query_indeces) == 0:
+            if not query_indeces:
                 continue
 
             # Choose only rows of the split.

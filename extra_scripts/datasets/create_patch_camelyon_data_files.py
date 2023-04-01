@@ -95,15 +95,14 @@ class PatchCamelyon:
     def _download_missing_files(self, download: bool):
         for file, url in self._FILES.values():
             if not os.path.exists(os.path.join(self.input_path, file)):
-                if download:
-                    filename = os.path.basename(url)
-                    download_url(url=url, root=self.input_path, filename=filename)
-                    from_path = os.path.join(self.input_path, filename)
-                    to_path = from_path.replace(".gz", "")
-                    with gzip.open(from_path, "rb") as rfh, open(to_path, "wb") as wfh:
-                        wfh.write(rfh.read())
-                else:
+                if not download:
                     raise ValueError(f"Missing file {file} in {self.input_path}")
+                filename = os.path.basename(url)
+                download_url(url=url, root=self.input_path, filename=filename)
+                from_path = os.path.join(self.input_path, filename)
+                to_path = from_path.replace(".gz", "")
+                with gzip.open(from_path, "rb") as rfh, open(to_path, "wb") as wfh:
+                    wfh.write(rfh.read())
 
     def _open_h5_file(self, file_name: str):
         return h5py.File(os.path.join(self.input_path, file_name), "r")

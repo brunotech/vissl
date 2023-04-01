@@ -129,7 +129,7 @@ class NCELossWithMemory(ClassyLoss):
             output = [output]
         assert isinstance(
             output, list
-        ), "Model output should be a list of tensors. Got Type {}".format(type(output))
+        ), f"Model output should be a list of tensors. Got Type {type(output)}"
 
         if not self.init_sync_memory:
             self.sync_memory()
@@ -400,7 +400,7 @@ class AliasMethod(nn.Module):
 
         # Loop though and create little binary mixtures that appropriately allocate
         # the larger outcomes over the overall uniform mixture.
-        while len(smaller) > 0 and len(larger) > 0:
+        while smaller and larger:
             small = smaller.pop()
             large = larger.pop()
 
@@ -479,6 +479,4 @@ class NCECriterion(nn.Module):
         lnPmtsum = lnPmt.sum(0)
         lnPonsum = lnPon.view(-1, 1).sum(0)
 
-        loss = -(lnPmtsum + lnPonsum) / batchSize
-
-        return loss
+        return -(lnPmtsum + lnPonsum) / batchSize

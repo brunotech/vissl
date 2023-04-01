@@ -43,10 +43,10 @@ def get_argument_parser():
 
 
 STANFORD_URL = "https://ai.stanford.edu/~jkrause/car196/"
-TRAIN_IMAGE_URL = STANFORD_URL + "cars_train.tgz"
+TRAIN_IMAGE_URL = f"{STANFORD_URL}cars_train.tgz"
 TRAIN_ANNOT_URL = "https://ai.stanford.edu/~jkrause/cars/car_devkit.tgz"
-TEST_IMAGE_URL = STANFORD_URL + "cars_test.tgz"
-TEST_ANNOT_URL = STANFORD_URL + "cars_test_annos_withlabels.mat"
+TEST_IMAGE_URL = f"{STANFORD_URL}cars_test.tgz"
+TEST_ANNOT_URL = f"{STANFORD_URL}cars_test_annos_withlabels.mat"
 
 
 def download_dataset(root: str):

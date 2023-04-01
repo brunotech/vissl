@@ -44,9 +44,8 @@ class Trainer(DefaultTrainer):
             output_folder = os.path.join(cfg.OUTPUT_DIR, "inference")
         if "coco" in dataset_name:
             return COCOEvaluator(dataset_name, cfg, True, output_folder)
-        else:
-            assert "voc" in dataset_name, "Dataset must be coco or voc"
-            return PascalVOCDetectionEvaluator(dataset_name)
+        assert "voc" in dataset_name, "Dataset must be coco or voc"
+        return PascalVOCDetectionEvaluator(dataset_name)
 
 
 def main(args):
@@ -62,9 +61,7 @@ def main(args):
         DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
             cfg.MODEL.WEIGHTS, resume=args.resume
         )
-        res = Trainer.test(cfg, model)
-        return res
-
+        return Trainer.test(cfg, model)
     trainer = Trainer(cfg)
     trainer.resume_or_load(resume=args.resume)
     return trainer.train()

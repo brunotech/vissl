@@ -19,14 +19,13 @@ class SmoothCrossEntropy(torch.nn.modules.CrossEntropyLoss):
     """
 
     def forward(self, input: Tensor, target: Tensor) -> Tensor:
-        if len(target.shape) > 1:
-            log_probs = F.log_softmax(input, 1)
-            # TODO: Implement weight and ignore_index
-            return -torch.mean(torch.sum(log_probs * target, dim=1))
-        else:
+        if len(target.shape) <= 1:
             return F.cross_entropy(
                 input, target, weight=self.weight, ignore_index=self.ignore_index
             )
+        log_probs = F.log_softmax(input, 1)
+        # TODO: Implement weight and ignore_index
+        return -torch.mean(torch.sum(log_probs * target, dim=1))
 
 
 class CrossEntropyMultipleOutputSingleTargetCriterion(nn.Module):
@@ -68,10 +67,10 @@ class CrossEntropyMultipleOutputSingleTargetCriterion(nn.Module):
             output = [output]
         assert isinstance(
             output, list
-        ), "Model output should be a list of tensors. Got Type {}".format(type(output))
-        assert torch.is_tensor(target), "Target should be a tensor. Got Type {}".format(
-            type(target)
-        )
+        ), f"Model output should be a list of tensors. Got Type {type(output)}"
+        assert torch.is_tensor(
+            target
+        ), f"Target should be a tensor. Got Type {type(target)}"
 
         loss = 0
         for i, pred in enumerate(output):

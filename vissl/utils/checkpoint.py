@@ -352,7 +352,7 @@ class SlicedCheckpointLoader:
         - save the slice in this folder, with a unique name
         - return the created file name
         """
-        checkpoint_sub_folder = os.path.splitext(checkpoint_path)[0] + "_layers"
+        checkpoint_sub_folder = f"{os.path.splitext(checkpoint_path)[0]}_layers"
         makedir(checkpoint_sub_folder)
         hash_name = hashlib.sha1(param_path.encode()).hexdigest()
         file_path = os.path.join(checkpoint_sub_folder, f"{hash_name}.torch")
@@ -409,7 +409,7 @@ class SlicedCheckpointLoader:
             with context:
                 yield path, module
                 for name, child in module._modules.items():
-                    next_path = path + "." + name if path else name
+                    next_path = f"{path}.{name}" if path else name
                     yield from visit(next_path, child)
 
         yield from visit("", model)
@@ -513,12 +513,10 @@ def has_checkpoint(checkpoint_folder: str, skip_final: bool = False):
         checkpoint_exists (bool): whether checkpoint exists or not
     """
     checkpointed_files = g_pathmgr.ls(checkpoint_folder)
-    checkpoint_exists = False
-    for f in checkpointed_files:
-        if f.endswith(".torch") and ("model_final" not in f or not skip_final):
-            checkpoint_exists = True
-            break
-    return checkpoint_exists
+    return any(
+        f.endswith(".torch") and ("model_final" not in f or not skip_final)
+        for f in checkpointed_files
+    )
 
 
 def has_final_checkpoint(
@@ -586,11 +584,10 @@ def get_checkpoint_resume_files(
     # len(all_iters) - 1 is the last index, checkpoint_resume_num can't be beyond that.
     checkpoint_resume_num = min(len(all_iters) - 1, checkpoint_resume_num)
     logging.info(f"checkpoint_resume_num: {checkpoint_resume_num}")
-    if len(all_iters) > 0:
+    if all_iters:
         all_iters.sort(reverse=True)
         last_iter = int(all_iters[checkpoint_resume_num])
-        filename = f"{replace_prefix}{last_iter}.torch"
-        return filename
+        return f"{replace_prefix}{last_iter}.torch"
     else:
         return None
 
@@ -635,7 +632,7 @@ def print_state_dict_shapes(state_dict: Dict[str, Any]):
         state_dict (Dict[str, Any]): model state dictionary
     """
     logging.info("Model state_dict:")
-    for param_tensor in state_dict.keys():
+    for param_tensor in state_dict:
         logging.info(f"{param_tensor}:\t{state_dict[param_tensor].size()}")
 
 
@@ -649,39 +646,31 @@ def print_loaded_dict_info(
     Print what layers were loaded, what layers were ignored/skipped/not found
     when initializing a model from a specified model params file.
     """
-    extra_layers = []
-    max_len_model = max(len(key) for key in model_state_dict.keys())
+    max_len_model = max(len(key) for key in model_state_dict)
     # go through the model layers and print what layer is loaded/not loaded/skipped
-    for layername in model_state_dict.keys():
-        if len(skip_layers) > 0 and any(item in layername for item in skip_layers):
+    for layername, value in model_state_dict.items():
+        if skip_layers and any(item in layername for item in skip_layers):
             logging.info(f"Ignored layer:\t{layername}")
             continue
         if layername in state_dict:
             if (
-                not ("heads" in layername)
-                or (
-                    "heads" in layername
-                    and not model_config.FEATURE_EVAL_SETTINGS.EVAL_MODE_ON
-                )
-                or (
-                    "heads" in layername
-                    and model_config.FEATURE_EVAL_SETTINGS.EVAL_MODE_ON
-                    and model_config.FEATURE_EVAL_SETTINGS.EVAL_TRUNK_AND_HEAD
-                )
+                "heads" not in layername
+                or not model_config.FEATURE_EVAL_SETTINGS.EVAL_MODE_ON
+                or model_config.FEATURE_EVAL_SETTINGS.EVAL_TRUNK_AND_HEAD
             ):
                 logging.info(
-                    f"Loaded: {layername: <{max_len_model}} of "
-                    f"shape: {model_state_dict[layername].size()} from checkpoint"
+                    f"Loaded: {layername: <{max_len_model}} of shape: {value.size()} from checkpoint"
                 )
             else:
                 logging.info(f"Ignored layer:\t{layername}")
         else:
             logging.info(f"Not found:\t\t{layername}, not initialized")
 
-    # go through the checkpoint state_dict and print what extra layers exist in checkpoint
-    for layername in state_dict.keys():
-        if layername not in model_state_dict:
-            extra_layers.append(layername)
+    extra_layers = [
+        layername
+        for layername in state_dict
+        if layername not in model_state_dict
+    ]
     logging.info(f"Extra layers not loaded from checkpoint: {extra_layers}")
 
 
@@ -744,14 +733,13 @@ def check_model_compatibilty(config: AttrDict, state_dict: Dict[str, Any]):
     if is_feature_extractor_model(config.MODEL):
         trunk_append_prefix = "trunk.base_model._feature_blocks."
 
-    is_compatible = True
-    for layername in state_dict.keys():
-        if not (
+    is_compatible = all(
+        (
             layername.startswith(trunk_append_prefix)
             or layername.startswith(heads_append_prefix)
-        ):
-            is_compatible = False
-            break
+        )
+        for layername in state_dict
+    )
     if not is_compatible:
         raise Exception(
             "Model provided in config.MODEL.WEIGHTS_INIT.PARAMS_FILE is not compatible "
@@ -788,7 +776,7 @@ def get_checkpoint_model_state_dict(config: AttrDict, state_dict: Dict[str, Any]
         classy_state_dict["heads"], heads_append_prefix
     )
     state_dict = {}
-    state_dict.update(trunk_state_dict)
+    state_dict |= trunk_state_dict
     state_dict.update(heads_state_dict)
     return state_dict
 
@@ -822,9 +810,9 @@ def init_model_from_consolidated_weights(
     """
     # whether it's a model from somewhere else or a model from this codebase, load the
     # state_dict
-    if state_dict_key_name and len(state_dict_key_name) > 0:
+    if state_dict_key_name and state_dict_key_name != "":
         assert (
-            state_dict_key_name in state_dict.keys()
+            state_dict_key_name in state_dict
         ), f"Unknown state dict key: {state_dict_key_name}"
         state_dict = state_dict[state_dict_key_name]
 
@@ -846,7 +834,7 @@ def init_model_from_consolidated_weights(
     local_rank, _ = get_machine_local_and_dist_rank()
     max_len_model = max(len(key) for key in all_layers.keys())
     for layername in all_layers.keys():
-        if len(skip_layers) > 0 and any(item in layername for item in skip_layers):
+        if skip_layers and any(item in layername for item in skip_layers):
             if local_rank == 0:
                 logging.info(f"Ignored layer:\t{layername}")
             continue
@@ -858,16 +846,9 @@ def init_model_from_consolidated_weights(
             # if we are evaluating the heads as well or not. If not, we don't initialize
             # the heads. Otherwise we initialize the heads.
             if (
-                not ("heads" in layername)
-                or (
-                    "heads" in layername
-                    and not config.MODEL.FEATURE_EVAL_SETTINGS.EVAL_MODE_ON
-                )
-                or (
-                    "heads" in layername
-                    and config.MODEL.FEATURE_EVAL_SETTINGS.EVAL_MODE_ON
-                    and config.MODEL.FEATURE_EVAL_SETTINGS.EVAL_TRUNK_AND_HEAD
-                )
+                "heads" not in layername
+                or not config.MODEL.FEATURE_EVAL_SETTINGS.EVAL_MODE_ON
+                or config.MODEL.FEATURE_EVAL_SETTINGS.EVAL_TRUNK_AND_HEAD
             ):
                 # Accommodate changing position embeddings. Fine-tuning at a
                 # different resolution than that which a model was pretrained
@@ -886,18 +867,16 @@ def init_model_from_consolidated_weights(
                         f"Loaded: {layername: <{max_len_model}} of "
                         f"shape: {all_layers[layername].size()} from checkpoint"
                     )
-            else:
-                if local_rank == 0:
-                    logging.info(f"Ignored layer:\t{layername}")
-        else:
-            if local_rank == 0:
-                logging.info(f"Not found:\t\t{layername}, not initialized")
+            elif local_rank == 0:
+                logging.info(f"Ignored layer:\t{layername}")
+        elif local_rank == 0:
+            logging.info(f"Not found:\t\t{layername}, not initialized")
     if local_rank == 0:
-        extra_layers = []
-        # go through the checkpoint state_dict and print what extra layers exist in checkpoint
-        for layername in state_dict.keys():
-            if layername not in all_layers:
-                extra_layers.append(layername)
+        extra_layers = [
+            layername
+            for layername in state_dict.keys()
+            if layername not in all_layers
+        ]
         logging.info(f"Extra layers not loaded from checkpoint: {extra_layers}")
 
     ####################### DEBUG ############################

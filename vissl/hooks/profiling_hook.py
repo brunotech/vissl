@@ -79,8 +79,8 @@ class ProfilingHook(ClassyHook):
             assert (
                 task.use_gpu is True
             ), "Profiling memory usage requires training on GPU"
-        if self.profile_by_layer_memory and self.start_iteration == 0:
-            self.layer_memory_tracker.monitor(task.base_model)
+            if self.start_iteration == 0:
+                self.layer_memory_tracker.monitor(task.base_model)
         if self.profile_runtime:
             self.runtime_profiler.__enter__()
 

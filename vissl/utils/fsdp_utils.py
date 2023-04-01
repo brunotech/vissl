@@ -32,14 +32,13 @@ def get_global_group():
     Singleton pytorch distributed group
     Inspired by https://github.com/pytorch/fairseq
     """
-    if dist.is_initialized():
-        if not hasattr(get_global_group, "_global_group"):
-            # ideally we could use torch.distributed.group.WORLD, but it seems
-            # to cause random NCCL hangs in some cases
-            get_global_group._global_group = dist.new_group()
-        return get_global_group._global_group
-    else:
+    if not dist.is_initialized():
         return None
+    if not hasattr(get_global_group, "_global_group"):
+        # ideally we could use torch.distributed.group.WORLD, but it seems
+        # to cause random NCCL hangs in some cases
+        get_global_group._global_group = dist.new_group()
+    return get_global_group._global_group
 
 
 def fsdp_auto_wrap_bn(module):
@@ -88,14 +87,11 @@ class _BigConvAutoWrapPolicy:
 
     def __call__(self, module: nn.Module, recurse: bool, unwrapped_params: int):
         is_large = unwrapped_params >= self.threshold
+        if not recurse:
+            return isinstance(module, nn.Conv2d) and is_large
         force_leaf_modules = default_auto_wrap_policy.FORCE_LEAF_MODULES
-        if recurse:
-            # We should recurse if the module is big enough but not in force_leaf_modules.
-            return is_large and not isinstance(module, tuple(force_leaf_modules))
-        else:
-            # If we are not recursing, we should wrap but not the exclude list.
-            is_conv = isinstance(module, nn.Conv2d)
-            return is_conv and is_large
+        # We should recurse if the module is big enough but not in force_leaf_modules.
+        return is_large and not isinstance(module, tuple(force_leaf_modules))
 
 
 def auto_wrap_big_layers(module: nn.Module, fsdp_config: AttrDict):
